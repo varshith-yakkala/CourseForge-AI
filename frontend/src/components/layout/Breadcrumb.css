@@ -1,0 +1,41 @@
+.cf-breadcrumb {
+  display: flex;
+  align-items: center;
+}
+
+.cf-breadcrumb-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cf-breadcrumb-item {
+  display: flex;
+  align-items: center;
+}
+
+.cf-breadcrumb-link {
+  color: var(--text-muted);
+  font-size: var(--text-label-md);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.cf-breadcrumb-link:hover {
+  color: var(--text-primary);
+}
+
+.cf-breadcrumb-separator {
+  color: var(--border-strong);
+}
+
+.cf-breadcrumb-current {
+  color: var(--text-primary);
+  font-size: var(--text-label-md);
+  font-weight: 500;
+}

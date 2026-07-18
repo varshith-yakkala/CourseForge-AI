@@ -1,0 +1,95 @@
+.cf-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-weight: 500;
+  transition: all var(--duration-fast) var(--ease-default);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cf-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Sizes */
+.cf-button--xs { height: 28px; padding: 0 10px; font-size: var(--text-label-sm); }
+.cf-button--sm { height: 32px; padding: 0 12px; font-size: var(--text-label-md); }
+.cf-button--md { height: 36px; padding: 0 16px; font-size: var(--text-label-md); }
+.cf-button--lg { height: 42px; padding: 0 20px; font-size: var(--text-label-lg); }
+.cf-button--xl { height: 50px; padding: 0 24px; font-size: var(--text-body-sm); }
+
+/* Icons */
+.cf-button-icon {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
+
+/* Spinner */
+.cf-button-spinner {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  animation: spin 1s linear infinite;
+}
+
+/* Variants */
+.cf-button--primary {
+  background-color: var(--color-brand-500);
+  color: #fff;
+  border: none;
+}
+.cf-button--primary:hover {
+  background-color: var(--color-brand-400);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-brand);
+}
+.cf-button--primary:active {
+  transform: scale(0.97);
+  background-color: var(--color-brand-600);
+}
+
+.cf-button--secondary {
+  background-color: transparent;
+  color: var(--color-brand-400);
+  border: 1px solid var(--border-brand);
+}
+.cf-button--secondary:hover {
+  background-color: var(--bg-elevated);
+  border-color: var(--color-brand-500);
+}
+
+.cf-button--ghost {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: none;
+}
+.cf-button--ghost:hover {
+  background-color: var(--bg-overlay);
+  color: var(--text-primary);
+}
+
+.cf-button--danger {
+  background-color: var(--color-danger-500);
+  color: #fff;
+  border: none;
+}
+.cf-button--danger:hover {
+  background-color: var(--color-danger-400);
+}
+
+.cf-button--muted {
+  background-color: var(--bg-overlay);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+}
+.cf-button--muted:hover {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+}

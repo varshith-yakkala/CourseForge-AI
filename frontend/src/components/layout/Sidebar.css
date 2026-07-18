@@ -1,0 +1,152 @@
+.cf-sidebar {
+  width: var(--sidebar-width);
+  height: 100vh;
+  background-color: var(--bg-subtle);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  transition: width var(--duration-moderate) var(--ease-default);
+  overflow: hidden;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.cf-sidebar--collapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+.cf-sidebar-header {
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cf-sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.cf-sidebar-logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--color-brand-400) 0%, var(--color-brand-600) 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cf-sidebar-logo-text {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  opacity: 1;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.cf-sidebar--collapsed .cf-sidebar-logo-text {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cf-sidebar-toggle {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-fast) var(--ease-out);
+  flex-shrink: 0;
+}
+
+.cf-sidebar-toggle:hover {
+  background-color: var(--bg-overlay);
+  color: var(--text-primary);
+}
+
+.cf-sidebar--collapsed .cf-sidebar-header {
+  justify-content: center;
+  padding: 0;
+}
+
+.cf-sidebar--collapsed .cf-sidebar-logo {
+  display: none;
+}
+
+.cf-sidebar-nav {
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cf-sidebar-spacer {
+  flex: 1;
+}
+
+.cf-sidebar-item {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  gap: 12px;
+  transition: all var(--duration-fast) var(--ease-out);
+  white-space: nowrap;
+  overflow: hidden;
+  border-left: 2px solid transparent;
+}
+
+.cf-sidebar-item:hover {
+  background-color: var(--bg-overlay);
+  color: var(--text-primary);
+}
+
+.cf-sidebar-item--active {
+  background-color: rgba(124, 114, 255, 0.12);
+  border-left-color: var(--color-brand-500);
+  color: var(--color-brand-400);
+}
+
+.cf-sidebar-item-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  stroke-width: 1.5px;
+}
+
+.cf-sidebar-item-label {
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.cf-sidebar--collapsed .cf-sidebar-item {
+  padding: 0;
+  justify-content: center;
+  border-left: none; /* or keep it, but it moves icon off-center */
+}
+
+.cf-sidebar--collapsed .cf-sidebar-item--active {
+  background-color: rgba(124, 114, 255, 0.12);
+  border-left: 2px solid var(--color-brand-500);
+  padding-left: 2px; /* adjust for border */
+}
+
+.cf-sidebar--collapsed .cf-sidebar-item-label {
+  display: none;
+}

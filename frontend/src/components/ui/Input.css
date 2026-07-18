@@ -1,0 +1,75 @@
+.cf-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cf-input-label {
+  font-size: var(--text-label-md);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.cf-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cf-input {
+  width: 100%;
+  height: 40px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  font-size: var(--text-body-md);
+  color: var(--text-primary);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.cf-input:focus {
+  outline: none;
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 3px rgba(124, 114, 255, 0.15);
+  background-color: var(--bg-elevated);
+}
+
+.cf-input--error {
+  border-color: var(--color-danger-500);
+}
+
+.cf-input--error:focus {
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.15);
+}
+
+.cf-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--bg-subtle);
+}
+
+.cf-input-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  width: 16px;
+  height: 16px;
+}
+
+.cf-input--with-icon {
+  padding-left: 36px;
+}
+
+.cf-input-error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-label-sm);
+  color: var(--color-danger-500);
+}
+
+.cf-input-helper {
+  font-size: var(--text-label-sm);
+  color: var(--text-muted);
+}

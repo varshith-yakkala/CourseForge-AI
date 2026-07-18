@@ -1,0 +1,47 @@
+.cf-empty-state, .cf-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-12) var(--space-6);
+  background-color: var(--bg-surface);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-lg);
+  width: 100%;
+}
+
+.cf-empty-state-icon {
+  color: var(--color-brand-500);
+  margin-bottom: var(--space-4);
+  opacity: 0.8;
+  background: radial-gradient(circle, rgba(124, 114, 255, 0.15) 0%, transparent 70%);
+  padding: var(--space-4);
+  border-radius: 50%;
+}
+
+.cf-error-state-icon {
+  color: var(--color-danger-500);
+  margin-bottom: var(--space-4);
+  background: radial-gradient(circle, rgba(244, 63, 94, 0.15) 0%, transparent 70%);
+  padding: var(--space-3);
+  border-radius: 50%;
+}
+
+.cf-empty-state-title, .cf-error-state-title {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--text-heading-sm);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.cf-empty-state-desc, .cf-error-state-desc {
+  margin: 0;
+  font-size: var(--text-body-md);
+  color: var(--text-secondary);
+  max-width: 400px;
+}
+
+.cf-empty-state-action, .cf-error-state-action {
+  margin-top: var(--space-6);
+}

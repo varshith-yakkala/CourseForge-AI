@@ -1,0 +1,43 @@
+.cf-progress-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.cf-progress-track {
+  width: 100%;
+  background-color: var(--bg-overlay);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+/* Sizes */
+.cf-progress-track--xs { height: 2px; }
+.cf-progress-track--sm { height: 4px; }
+.cf-progress-track--md { height: 6px; }
+.cf-progress-track--lg { height: 16px; } /* Thicker for inside labels */
+
+.cf-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-brand-600), var(--color-brand-400));
+  border-radius: var(--radius-full);
+  transition: width 600ms var(--ease-default);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+}
+
+.cf-progress-label-inside {
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  line-height: 1;
+}
+
+.cf-progress-label-below {
+  font-size: var(--text-label-sm);
+  color: var(--text-muted);
+  align-self: flex-end;
+}

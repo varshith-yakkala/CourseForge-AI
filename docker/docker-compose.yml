@@ -1,0 +1,178 @@
+# ═══════════════════════════════════════════════════════════════
+# CourseForge AI — Docker Compose
+# ═══════════════════════════════════════════════════════════════
+# Services:
+#   postgres  — PostgreSQL 15 (primary database)
+#   redis     — Redis 7 (Celery broker + cache)
+#   backend   — FastAPI application
+#   worker    — Celery background worker
+#   frontend  — React app served by Nginx
+# ═══════════════════════════════════════════════════════════════
+
+version: "3.9"
+
+# ─────────────────────────────────────────────
+# Shared environment variables loaded from .env
+# ─────────────────────────────────────────────
+x-backend-env: &backend-env
+  env_file:
+    - ../.env
+
+services:
+
+  # ─────────────────────────────────────────────
+  # PostgreSQL Database
+  # ─────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: courseforge_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-courseforge}
+      POSTGRES_USER: ${POSTGRES_USER:-courseforge_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-courseforge_user} -d ${POSTGRES_DB:-courseforge}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - courseforge_net
+
+  # ─────────────────────────────────────────────
+  # Redis — Celery broker + application cache
+  # ─────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: courseforge_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - courseforge_net
+
+  # ─────────────────────────────────────────────
+  # FastAPI Backend
+  # ─────────────────────────────────────────────
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: courseforge_backend
+    restart: unless-stopped
+    <<: *backend-env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+    volumes:
+      # Mount InsightForge at the configured path
+      - ${INSIGHTFORGE_PATH}:/insightforge:ro
+      # Persist uploads and exports
+      - uploads_data:/app/uploads
+      - exports_data:/app/exports
+      - logs_data:/app/logs
+    ports:
+      - "${APP_PORT:-8001}:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - courseforge_net
+
+  # ─────────────────────────────────────────────
+  # Celery Worker — background course generation
+  # ─────────────────────────────────────────────
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: courseforge_worker
+    restart: unless-stopped
+    <<: *backend-env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+    command: >
+      celery -A tasks.celery_app worker
+      --loglevel=info
+      --concurrency=2
+      --max-tasks-per-child=100
+    volumes:
+      - ${INSIGHTFORGE_PATH}:/insightforge:ro
+      - uploads_data:/app/uploads
+      - exports_data:/app/exports
+      - logs_data:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - courseforge_net
+
+  # ─────────────────────────────────────────────
+  # React Frontend (Nginx)
+  # ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8001
+    container_name: courseforge_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - courseforge_net
+
+# ─────────────────────────────────────────────
+# Volumes
+# ─────────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  uploads_data:
+    driver: local
+  exports_data:
+    driver: local
+  logs_data:
+    driver: local
+
+# ─────────────────────────────────────────────
+# Networks
+# ─────────────────────────────────────────────
+networks:
+  courseforge_net:
+    driver: bridge

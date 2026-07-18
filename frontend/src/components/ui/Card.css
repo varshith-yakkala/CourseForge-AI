@@ -1,0 +1,44 @@
+.cf-card {
+  border-radius: var(--radius-md);
+  padding: 20px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+/* Variants */
+.cf-card--elevated {
+  background-color: var(--bg-elevated);
+  box-shadow: var(--shadow-md);
+}
+
+.cf-card--outlined {
+  background-color: transparent;
+  border: 1px solid var(--border-default);
+  box-shadow: none;
+}
+
+.cf-card--ghost {
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+.cf-card--ghost.cf-card--hover:hover {
+  background-color: var(--bg-surface);
+  padding: 20px;
+}
+
+.cf-card--glass {
+  background-color: rgba(22, 22, 40, 0.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Hover effect */
+.cf-card--hover:not(.cf-card--ghost):hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-default);
+}

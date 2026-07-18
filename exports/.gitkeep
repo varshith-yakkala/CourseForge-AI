@@ -1,0 +1,4 @@
+# This directory stores generated course export files at runtime.
+# Structure: exports/{user_id}/{course_id}/course.pdf | course.md
+# This directory is excluded from version control via .gitignore.
+# It is created automatically by the export service.

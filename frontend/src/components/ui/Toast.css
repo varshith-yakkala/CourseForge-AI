@@ -1,0 +1,81 @@
+.cf-toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+  width: calc(100vw - 40px);
+}
+
+.cf-toast {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 16px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  animation: slideInRight var(--duration-moderate) var(--ease-bounce);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Accent bar */
+.cf-toast::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.cf-toast--success::before { background-color: var(--color-success-500); }
+.cf-toast--error::before { background-color: var(--color-danger-500); }
+.cf-toast--warning::before { background-color: var(--color-warning-500); }
+.cf-toast--info::before { background-color: var(--color-brand-500); }
+
+.cf-toast-icon-wrapper {
+  margin-right: 12px;
+  margin-top: 2px;
+}
+
+.cf-toast--success .cf-toast-icon { color: var(--color-success-400); }
+.cf-toast--error .cf-toast-icon { color: var(--color-danger-400); }
+.cf-toast--warning .cf-toast-icon { color: var(--color-warning-400); }
+.cf-toast--info .cf-toast-icon { color: var(--color-brand-400); }
+
+.cf-toast-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cf-toast-title {
+  margin: 0;
+  font-size: var(--text-label-md);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.cf-toast-message {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+}
+
+.cf-toast-close {
+  color: var(--text-muted);
+  margin-left: 12px;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+.cf-toast-close:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-overlay);
+}

@@ -1,0 +1,31 @@
+/* Spinner */
+.cf-spinner {
+  animation: spin 1s linear infinite;
+  color: var(--text-muted);
+}
+.cf-spinner--sm { width: 16px; height: 16px; }
+.cf-spinner--md { width: 24px; height: 24px; }
+.cf-spinner--lg { width: 32px; height: 32px; }
+.cf-spinner--xl { width: 48px; height: 48px; }
+
+/* Skeleton */
+.cf-skeleton {
+  background: var(--bg-overlay);
+  background: linear-gradient(
+    90deg,
+    var(--bg-overlay) 0%,
+    var(--bg-elevated) 20%,
+    var(--bg-overlay) 40%,
+    var(--bg-overlay) 100%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.5s linear infinite;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-skeleton {
+    animation: none;
+    background: var(--bg-overlay);
+  }
+}

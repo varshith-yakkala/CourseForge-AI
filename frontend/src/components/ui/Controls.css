@@ -1,0 +1,151 @@
+.cf-control-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.cf-control-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cf-control-label {
+  font-size: var(--text-body-md);
+  color: var(--text-primary);
+  line-height: 20px;
+}
+
+.cf-control-desc {
+  font-size: var(--text-label-sm);
+  color: var(--text-muted);
+}
+
+/* Checkbox specific */
+.cf-checkbox-container {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.cf-checkbox-box {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background-color: var(--bg-surface);
+  transition: all var(--duration-fast) var(--ease-out);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cf-checkbox-icon {
+  width: 14px;
+  height: 14px;
+  stroke-dasharray: 16;
+  stroke-dashoffset: 16;
+  transition: stroke-dashoffset 0.2s var(--ease-out);
+}
+
+.cf-checkbox-input:checked + .cf-checkbox-box {
+  background-color: var(--color-brand-500);
+  border-color: var(--color-brand-500);
+  color: white;
+}
+
+.cf-checkbox-input:checked + .cf-checkbox-box .cf-checkbox-icon {
+  stroke-dashoffset: 0;
+}
+
+.cf-checkbox-input:focus-visible + .cf-checkbox-box {
+  box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--color-brand-500);
+}
+
+/* Radio specific */
+.cf-radio-container {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.cf-radio-circle {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background-color: var(--bg-surface);
+  transition: all var(--duration-fast) var(--ease-out);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cf-radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: white;
+  transform: scale(0);
+  transition: transform 0.2s var(--ease-bounce);
+}
+
+.cf-radio-input:checked + .cf-radio-circle {
+  background-color: var(--color-brand-500);
+  border-color: var(--color-brand-500);
+}
+
+.cf-radio-input:checked + .cf-radio-circle .cf-radio-dot {
+  transform: scale(1);
+}
+
+.cf-radio-input:focus-visible + .cf-radio-circle {
+  box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--color-brand-500);
+}
+
+/* Switch specific */
+.cf-switch-container {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.cf-switch-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 20px;
+  background-color: var(--bg-overlay);
+  border: 1px solid var(--border-strong);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.cf-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: white;
+  transition: transform 0.2s var(--ease-bounce);
+}
+
+.cf-switch-input:checked + .cf-switch-track {
+  background-color: var(--color-brand-500);
+  border-color: var(--color-brand-500);
+}
+
+.cf-switch-input:checked + .cf-switch-track .cf-switch-thumb {
+  transform: translateX(16px);
+}
+
+.cf-switch-input:focus-visible + .cf-switch-track {
+  box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--color-brand-500);
+}

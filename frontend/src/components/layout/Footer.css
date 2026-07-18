@@ -1,0 +1,32 @@
+.cf-footer {
+  width: 100%;
+  border-top: 1px solid var(--border-subtle);
+  background-color: var(--bg-base);
+  padding: 32px 0;
+  margin-top: auto;
+}
+
+.cf-footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cf-footer-logo {
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.cf-footer-links {
+  display: flex;
+  gap: 24px;
+}
+
+.cf-footer-links a {
+  color: var(--text-muted);
+  font-size: var(--text-label-sm);
+}
+
+.cf-footer-links a:hover {
+  color: var(--text-primary);
+}

@@ -1,0 +1,33 @@
+.cf-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--radius-xs);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Sizes */
+.cf-badge--sm { height: 20px; padding: 0 6px; font-size: 10px; }
+.cf-badge--md { height: 24px; padding: 0 8px; font-size: 12px; }
+.cf-badge--lg { height: 28px; padding: 0 10px; font-size: 14px; }
+
+/* Variants */
+.cf-badge--default { background-color: var(--bg-overlay); color: var(--text-secondary); }
+.cf-badge--brand   { background-color: rgba(124, 114, 255, 0.15); color: var(--color-brand-400); }
+.cf-badge--success { background-color: rgba(22, 192, 130, 0.15); color: var(--color-success-400); }
+.cf-badge--warning { background-color: rgba(245, 158, 11, 0.15); color: var(--color-warning-400); }
+.cf-badge--danger  { background-color: rgba(244, 63, 94, 0.15); color: var(--color-danger-400); }
+.cf-badge--info    { background-color: rgba(59, 159, 245, 0.15); color: var(--color-info-400); }
+
+/* Status Dot */
+.cf-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+.cf-badge-dot--pulse {
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

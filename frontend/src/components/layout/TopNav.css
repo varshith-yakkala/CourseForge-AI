@@ -1,0 +1,77 @@
+.cf-topnav {
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-6);
+  background-color: var(--bg-base);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 90;
+}
+
+.cf-topnav-left, .cf-topnav-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.cf-topnav-mobile-toggle {
+  display: none;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .cf-topnav-mobile-toggle {
+    display: flex;
+  }
+}
+
+.cf-topnav-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--text-label-sm);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.cf-topnav-action:hover {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.cf-topnav-action--icon {
+  padding: 0;
+  width: 32px;
+  justify-content: center;
+  background-color: transparent;
+  border-color: transparent;
+}
+.cf-topnav-action--icon:hover {
+  background-color: var(--bg-overlay);
+}
+
+.cf-topnav-kbd {
+  font-family: var(--font-mono);
+  background-color: var(--bg-overlay);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.cf-topnav-avatar {
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.cf-topnav-avatar:hover {
+  transform: scale(1.05);
+}

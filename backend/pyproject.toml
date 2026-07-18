@@ -1,0 +1,84 @@
+# ═══════════════════════════════════════════════════════════════
+# CourseForge AI — Ruff Linter + Formatter Configuration
+# ═══════════════════════════════════════════════════════════════
+# Ruff replaces: flake8, isort, pyupgrade, and basic black rules
+# Run: ruff check . --fix
+# Format: ruff format .
+# ═══════════════════════════════════════════════════════════════
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "RUF",  # Ruff-specific rules
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in default arguments (FastAPI Depends pattern)
+    "N805",  # first argument of a method should be named 'self' (conflicts with Pydantic validators)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["core", "api", "services", "tasks", "db", "insightforge", "prompts"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]  # Allow assert in tests
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+# ═══════════════════════════════════════════════════════════════
+# Pytest Configuration
+# ═══════════════════════════════════════════════════════════════
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--tb=short",
+    "--cov=.",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-exclude=tests/*",
+    "--cov-exclude=venv/*",
+]
+markers = [
+    "unit: Unit tests (no external dependencies)",
+    "integration: Integration tests (requires database and Redis)",
+    "ai: Tests that call the AI engine (slow, requires API key)",
+]
+
+# ═══════════════════════════════════════════════════════════════
+# Coverage
+# ═══════════════════════════════════════════════════════════════
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "tests/*",
+    "venv/*",
+    "*/__pycache__/*",
+    "db/migrations/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 70

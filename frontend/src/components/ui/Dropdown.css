@@ -1,0 +1,68 @@
+.cf-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.cf-dropdown-menu {
+  position: absolute;
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
+  min-width: 200px;
+  z-index: var(--z-dropdown);
+  animation: fadeInDown var(--duration-fast) var(--ease-out);
+}
+
+.cf-dropdown--bottom-right {
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+}
+
+.cf-dropdown--bottom-left {
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+}
+
+.cf-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--text-body-md);
+  text-align: left;
+  background: transparent;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.cf-dropdown-item:hover {
+  background-color: var(--bg-overlay);
+}
+
+.cf-dropdown-item--danger {
+  color: var(--color-danger-500);
+}
+.cf-dropdown-item--danger:hover {
+  background-color: rgba(244, 63, 94, 0.1);
+}
+
+.cf-dropdown-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+}
+.cf-dropdown-item--danger .cf-dropdown-icon {
+  color: var(--color-danger-500);
+}
+
+.cf-dropdown-divider {
+  height: 1px;
+  background-color: var(--border-subtle);
+  margin: 4px 0;
+}
