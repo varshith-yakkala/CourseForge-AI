@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     APP_DEBUG: bool = True
     APP_PORT: int = 8001
     APP_SECRET_KEY: str
+    API_V1_STR: str = "/api/v1"
 
     # ─────────────────────────────────────────────
     # DATABASE — PostgreSQL
@@ -49,7 +50,7 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int = 5432
     POSTGRES_DB: str = "courseforge"
     POSTGRES_USER: str = "courseforge_user"
-    POSTGRES_PASSWORD: str
+    POSTGRES_PASSWORD: str = "courseforge_pass"
 
     # ─────────────────────────────────────────────
     # REDIS
@@ -76,12 +77,12 @@ class Settings(BaseSettings):
     # ─────────────────────────────────────────────
     # INSIGHTFORGE INTEGRATION
     # ─────────────────────────────────────────────
-    INSIGHTFORGE_PATH: str
+    INSIGHTFORGE_PATH: str = "./insightforge-ai"
 
     # ─────────────────────────────────────────────
     # AI — GROQ
     # ─────────────────────────────────────────────
-    GROQ_API_KEY: str
+    GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
     GROQ_MAX_TOKENS: int = 2048
     GROQ_TEMPERATURE: float = 0.2
@@ -254,10 +255,20 @@ class Settings(BaseSettings):
     def validate_insightforge_path(self) -> "Settings":
         path = Path(self.INSIGHTFORGE_PATH)
         if not path.exists():
-            raise ValueError(
-                f"INSIGHTFORGE_PATH does not exist: {path}\n"
-                "Ensure InsightForge-AI is cloned at the configured path."
-            )
+            import warnings
+            if self.APP_ENV == "production":
+                raise ValueError(
+                    f"INSIGHTFORGE_PATH does not exist: {path}\n"
+                    "Ensure InsightForge-AI is cloned at the configured path."
+                )
+            else:
+                warnings.warn(
+                    f"\n[CourseForge] INSIGHTFORGE_PATH does not exist: {path}\n"
+                    "InsightForge-AI features (search, generation) will be unavailable.\n"
+                    "Set INSIGHTFORGE_PATH in backend/.env to enable AI features.",
+                    UserWarning,
+                    stacklevel=2,
+                )
         return self
 
     @model_validator(mode="after")
@@ -265,9 +276,10 @@ class Settings(BaseSettings):
         """
         Add InsightForge-AI to sys.path so its modules can be imported
         by the InsightForge adapter without modification.
+        Only adds the path if it actually exists to avoid polluting sys.path.
         """
         insight_path = str(Path(self.INSIGHTFORGE_PATH).resolve())
-        if insight_path not in sys.path:
+        if Path(self.INSIGHTFORGE_PATH).exists() and insight_path not in sys.path:
             sys.path.insert(0, insight_path)
         return self
 

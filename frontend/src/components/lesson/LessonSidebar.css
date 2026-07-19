@@ -1,0 +1,124 @@
+/* Lesson Sidebar Component Styles */
+.cf-lesson-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: var(--bg-secondary, #1e293b);
+  border-right: 1px solid var(--border-default, #334155);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--topbar-height, 60px));
+  overflow-y: auto;
+  position: sticky;
+  top: var(--topbar-height, 60px);
+}
+
+.cf-lesson-sidebar-header {
+  padding: var(--space-4, 16px);
+  border-bottom: 1px solid var(--border-default, #334155);
+}
+
+.cf-lesson-sidebar-back {
+  font-size: 12px;
+  color: var(--text-secondary, #94a3b8);
+  text-decoration: none;
+  display: inline-block;
+  margin-bottom: var(--space-2, 8px);
+}
+
+.cf-lesson-sidebar-back:hover {
+  color: var(--color-brand-primary, #818cf8);
+}
+
+.cf-lesson-sidebar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  margin: 0;
+}
+
+.cf-lesson-sidebar-nav {
+  padding: var(--space-3, 12px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+
+.cf-sidebar-lesson-link {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3, 12px);
+  padding: var(--space-3, 12px);
+  border-radius: var(--radius-md, 8px);
+  text-decoration: none;
+  color: var(--text-secondary, #94a3b8);
+  transition: all 0.15s ease;
+}
+
+.cf-sidebar-lesson-link:hover {
+  background: var(--bg-tertiary, #334155);
+  color: var(--text-primary, #f8fafc);
+}
+
+.cf-sidebar-lesson-link--active {
+  background: var(--bg-tertiary, #334155);
+  color: var(--color-brand-primary, #818cf8);
+  font-weight: 500;
+}
+
+.cf-sidebar-lesson-status {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.cf-icon-completed {
+  color: var(--color-success, #10b981);
+}
+
+.cf-icon-pending {
+  color: var(--border-default, #475569);
+}
+
+.cf-sidebar-lesson-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.cf-sidebar-lesson-num {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
+}
+
+.cf-sidebar-lesson-name {
+  font-size: 13px;
+  line-height: 1.4;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cf-sidebar-topic-list {
+  padding-left: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.cf-sidebar-topic-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.cf-sidebar-topic-dot {
+  color: var(--color-brand-primary, #818cf8);
+}

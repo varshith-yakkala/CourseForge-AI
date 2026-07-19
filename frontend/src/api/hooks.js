@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { coursesApi, documentsApi, searchApi } from './services';
+import { coursesApi, documentsApi, searchApi, lessonsApi } from './services';
 
 // Course Hooks
 export const useCourses = () => {
@@ -111,3 +111,53 @@ export const useSearch = () => {
     mutationFn: ({ query, courseId }) => searchApi.search(query, courseId),
   });
 };
+
+// Phase 7: Lesson Hooks
+export const useLesson = (courseId, lessonId) => {
+  return useQuery({
+    queryKey: ['lessons', courseId, lessonId],
+    queryFn: () => lessonsApi.getLesson(courseId, lessonId),
+    enabled: !!courseId && !!lessonId,
+    refetchInterval: (query) => {
+      const status = query.state?.data?.status;
+      return (status === 'generating' || status === 'pending') ? 2500 : false;
+    },
+  });
+};
+
+export const useRegenerateLesson = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courseId, lessonId }) => lessonsApi.regenerate(courseId, lessonId),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['lessons', variables.courseId, variables.lessonId] });
+    },
+  });
+};
+
+export const useUpdateProgress = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courseId, lessonId, progressData }) =>
+      lessonsApi.updateProgress(courseId, lessonId, progressData),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['progress', variables.courseId] });
+    },
+  });
+};
+
+export const useCourseProgress = (courseId) => {
+  return useQuery({
+    queryKey: ['progress', courseId],
+    queryFn: () => lessonsApi.getCourseProgress(courseId),
+    enabled: !!courseId,
+  });
+};
+
+export const useAskLessonTutor = () => {
+  return useMutation({
+    mutationFn: ({ courseId, lessonId, question }) =>
+      lessonsApi.askTutor(courseId, lessonId, question),
+  });
+};
+

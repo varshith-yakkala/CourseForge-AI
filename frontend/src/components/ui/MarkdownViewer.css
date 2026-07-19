@@ -1,0 +1,112 @@
+/* CourseForge AI — Markdown Viewer Styles */
+.cf-markdown-content {
+  font-size: var(--text-body-md-size, 16px);
+  line-height: 1.7;
+  color: var(--text-primary);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.cf-markdown-content h1 {
+  font-size: var(--text-heading-xl-size, 32px);
+  font-weight: 700;
+  margin-top: var(--space-8, 32px);
+  margin-bottom: var(--space-4, 16px);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-default);
+  padding-bottom: var(--space-2, 8px);
+}
+
+.cf-markdown-content h2 {
+  font-size: var(--text-heading-lg-size, 24px);
+  font-weight: 600;
+  margin-top: var(--space-8, 32px);
+  margin-bottom: var(--space-4, 16px);
+  color: var(--text-primary);
+}
+
+.cf-markdown-content h3 {
+  font-size: var(--text-heading-md-size, 20px);
+  font-weight: 600;
+  margin-top: var(--space-6, 24px);
+  margin-bottom: var(--space-3, 12px);
+  color: var(--text-primary);
+}
+
+.cf-markdown-content p {
+  margin-bottom: var(--space-4, 16px);
+}
+
+.cf-markdown-content ul, .cf-markdown-content ol {
+  margin-bottom: var(--space-4, 16px);
+  padding-left: var(--space-6, 24px);
+}
+
+.cf-markdown-content li {
+  margin-bottom: var(--space-2, 8px);
+}
+
+.cf-markdown-content blockquote {
+  border-left: 4px solid var(--color-brand-primary, #6366f1);
+  background: var(--bg-secondary, #1e293b);
+  padding: var(--space-4, 16px);
+  border-radius: 0 var(--radius-md, 8px) var(--radius-md, 8px) 0;
+  margin: var(--space-6, 24px) 0;
+  color: var(--text-secondary);
+}
+
+.cf-markdown-content blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.cf-markdown-table-wrapper {
+  overflow-x: auto;
+  margin: var(--space-6, 24px) 0;
+}
+
+.cf-markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+
+.cf-markdown-content th, .cf-markdown-content td {
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  border: 1px solid var(--border-default, #334155);
+}
+
+.cf-markdown-content th {
+  background-color: var(--bg-secondary, #1e293b);
+  font-weight: 600;
+}
+
+.cf-inline-code {
+  background: var(--bg-tertiary, #334155);
+  color: var(--color-brand-primary, #818cf8);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.cf-markdown-content pre {
+  border-radius: var(--radius-md, 8px);
+  overflow-x: auto;
+  margin: var(--space-6, 24px) 0;
+  background: #0d1117 !important;
+  padding: var(--space-4, 16px);
+}
+
+.cf-markdown-content pre code {
+  font-family: 'Fira Code', 'Courier New', Courier, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cf-markdown-content hr {
+  border: 0;
+  height: 1px;
+  background: var(--border-default, #334155);
+  margin: var(--space-8, 32px) 0;
+}

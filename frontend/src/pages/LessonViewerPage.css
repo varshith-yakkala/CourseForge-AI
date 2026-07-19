@@ -1,0 +1,132 @@
+/* LessonViewerPage Layout & Component Styles */
+.cf-lesson-viewer-layout {
+  display: flex;
+  min-height: calc(100vh - var(--topbar-height, 60px));
+  background: var(--bg-primary, #0f172a);
+}
+
+.cf-lesson-viewer-main {
+  flex: 1;
+  padding: var(--space-8, 32px);
+  overflow-y: auto;
+}
+
+.cf-lesson-viewer-container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.cf-lesson-content-grid {
+  display: flex;
+  gap: var(--space-8, 32px);
+  align-items: flex-start;
+}
+
+.cf-lesson-article {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Table of Contents */
+.cf-lesson-toc {
+  width: 220px;
+  min-width: 220px;
+  position: sticky;
+  top: 100px;
+  background: var(--bg-secondary, #1e293b);
+  border: 1px solid var(--border-default, #334155);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-4, 16px);
+}
+
+.cf-toc-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  margin-bottom: var(--space-3, 12px);
+  border-bottom: 1px solid var(--border-default, #334155);
+  padding-bottom: var(--space-2, 8px);
+}
+
+.cf-toc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+
+.cf-toc-item a {
+  font-size: 12px;
+  color: var(--text-secondary, #94a3b8);
+  text-decoration: none;
+  line-height: 1.4;
+  display: block;
+}
+
+.cf-toc-item a:hover {
+  color: var(--color-brand-primary, #818cf8);
+}
+
+/* Footer Navigation */
+.cf-lesson-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-12, 48px);
+  padding-top: var(--space-6, 24px);
+  border-top: 1px solid var(--border-default, #334155);
+}
+
+.cf-lesson-footer-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4, 16px);
+}
+
+/* State Cards */
+.cf-lesson-pending-card,
+.cf-lesson-generating-card,
+.cf-lesson-error-card {
+  text-align: center;
+  padding: var(--space-12, 48px) var(--space-8, 32px);
+  background: var(--bg-secondary, #1e293b);
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--border-default, #334155);
+  margin: var(--space-8, 32px) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4, 16px);
+}
+
+.cf-lesson-error-card {
+  border-color: var(--color-danger, #ef4444);
+}
+
+.cf-error-icon {
+  color: var(--color-danger, #ef4444);
+}
+
+.cf-brand-icon {
+  color: var(--color-brand-primary, #6366f1);
+}
+
+.cf-spin-icon {
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1024px) {
+  .cf-lesson-toc {
+    display: none;
+  }
+}

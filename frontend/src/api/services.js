@@ -80,3 +80,31 @@ export const searchApi = {
     return data;
   },
 };
+
+export const lessonsApi = {
+  getLesson: async (courseId, lessonId) => {
+    const { data } = await apiClient.get(`/courses/${courseId}/lessons/${lessonId}`);
+    return data;
+  },
+  generate: async (courseId, lessonId) => {
+    const { data } = await apiClient.post(`/courses/${courseId}/lessons/${lessonId}/generate`);
+    return data;
+  },
+  regenerate: async (courseId, lessonId) => {
+    const { data } = await apiClient.post(`/courses/${courseId}/lessons/${lessonId}/regenerate`);
+    return data;
+  },
+  updateProgress: async (courseId, lessonId, progressData) => {
+    const { data } = await apiClient.post(`/courses/${courseId}/lessons/${lessonId}/progress`, progressData);
+    return data;
+  },
+  getCourseProgress: async (courseId) => {
+    const { data } = await apiClient.get(`/courses/${courseId}/progress`);
+    return data;
+  },
+  askTutor: async (courseId, lessonId, question) => {
+    const { data } = await apiClient.post(`/courses/${courseId}/lessons/${lessonId}/ask`, { question });
+    return data;
+  },
+};
+

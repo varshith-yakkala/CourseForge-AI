@@ -38,9 +38,9 @@ async def _process_document_async(document_id: str) -> dict:
             # Init InsightForge Engine
             engine = InsightForgeEngine()
             
-            # Call adapter to index the document
-            logger.info(f"Indexing document {document_id} via InsightForge adapter...")
-            index_result = engine.adapter.index_document(doc.stored_path)
+            # Call adapter to index the document via the public engine API
+            logger.info(f"Indexing document {document_id} via InsightForge...")
+            index_result = engine.index_document(doc.stored_path)
 
             # Update DB with success
             doc.insightforge_doc_id = index_result.doc_id

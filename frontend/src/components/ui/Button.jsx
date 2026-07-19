@@ -7,26 +7,28 @@ export function Button({
   children, 
   variant = 'primary', 
   size = 'md', 
-  loading = false, 
+  loading = false,
+  isLoading = false, 
   disabled = false, 
   className,
   icon: Icon,
   ...props 
 }) {
+  const isCurrentlyLoading = loading || isLoading;
   return (
     <button
       className={cn(
         'cf-button',
         `cf-button--${variant}`,
         `cf-button--${size}`,
-        loading && 'cf-button--loading',
+        isCurrentlyLoading && 'cf-button--loading',
         className
       )}
-      disabled={disabled || loading}
+      disabled={disabled || isCurrentlyLoading}
       {...props}
     >
-      {loading && <Loader2 className="cf-button-spinner" />}
-      {!loading && Icon && <Icon className="cf-button-icon" />}
+      {isCurrentlyLoading && <Loader2 className="cf-button-spinner" />}
+      {!isCurrentlyLoading && Icon && <Icon className="cf-button-icon" />}
       <span className="cf-button-content">{children}</span>
     </button>
   );

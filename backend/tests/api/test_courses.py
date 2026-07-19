@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 @pytest.mark.asyncio
 async def test_list_courses(mocker):
@@ -10,9 +10,8 @@ async def test_list_courses(mocker):
     # Simulate an API request (Unit test style for routes without DB)
     from api.courses.routes import list_courses
     
-    # Assuming list_courses executes a query and returns courses
-    mock_result = AsyncMock()
-    mock_result.scalars().all.return_value = []
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = []
     mock_db.execute.return_value = mock_result
     
     result = await list_courses(db=mock_db, current_user=mock_user)
@@ -30,3 +29,4 @@ async def test_create_course(mocker):
     result = await create_course(db=mock_db, course_in=course_in, current_user=mock_user)
     assert result.title == "Test Course"
     assert result.status == "ready"
+

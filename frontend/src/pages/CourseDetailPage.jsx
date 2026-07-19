@@ -20,8 +20,13 @@ function CourseStructure({ courseId }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       {structure.lessons.map(lesson => (
-        <div key={lesson.id} style={{ padding: 'var(--space-6)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)' }}>
-          <h3 className="text-heading-md" style={{ marginBottom: 'var(--space-2)' }}>Lesson {lesson.order_index + 1}: {lesson.title}</h3>
+        <div key={lesson.id} style={{ padding: 'var(--space-6)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', background: 'var(--bg-secondary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-2)' }}>
+            <h3 className="text-heading-md">Lesson {lesson.order_index + 1}: {lesson.title}</h3>
+            <Link to={`/learn/${courseId}/${lesson.id}`}>
+              <Button icon={Play} size="sm">Start Lesson</Button>
+            </Link>
+          </div>
           <p className="text-body-md text-secondary" style={{ marginBottom: 'var(--space-4)' }}>{lesson.summary}</p>
           
           <div style={{ paddingLeft: 'var(--space-6)', borderLeft: '2px solid var(--border-default)' }}>

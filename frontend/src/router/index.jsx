@@ -78,7 +78,8 @@ export default function AppRouter() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/courses/:id" element={<CourseDetailPage />} />
-        <Route path="/learn/:courseId/:topicId" element={<LessonViewerPage />} />
+        <Route path="/learn/:courseId/:lessonId" element={<LessonViewerPage />} />
+        <Route path="/learn/:courseId" element={<LessonViewerPage />} />
         <Route path="/quiz/:quizId" element={<QuizPage />} />
         {/* <Route path="/quiz/:quizId/result" element={<QuizResultPage />} /> */}
         <Route path="/chat" element={<ChatPage />} />

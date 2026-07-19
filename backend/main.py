@@ -186,12 +186,14 @@ def _register_routers(app: FastAPI) -> None:
     from api.courses.routes import router as courses_router
     from api.documents.routes import router as documents_router
     from api.search.routes import router as search_router
+    from api.lessons.routes import router as lessons_router
 
     app.include_router(health_router, prefix=settings.API_V1_STR)
     app.include_router(auth_router, prefix=settings.API_V1_STR)
     app.include_router(courses_router, prefix=settings.API_V1_STR)
     app.include_router(documents_router, prefix=settings.API_V1_STR)
     app.include_router(search_router, prefix=settings.API_V1_STR)
+    app.include_router(lessons_router, prefix=settings.API_V1_STR)
 
 
 # ─────────────────────────────────────────────

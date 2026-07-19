@@ -45,6 +45,7 @@ skip-magic-trailing-comma = false
 # ═══════════════════════════════════════════════════════════════
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 python_files = ["test_*.py"]
@@ -56,8 +57,6 @@ addopts = [
     "--cov=.",
     "--cov-report=term-missing",
     "--cov-report=html:htmlcov",
-    "--cov-exclude=tests/*",
-    "--cov-exclude=venv/*",
 ]
 markers = [
     "unit: Unit tests (no external dependencies)",

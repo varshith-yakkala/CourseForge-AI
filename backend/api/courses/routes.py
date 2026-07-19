@@ -105,12 +105,12 @@ async def update_course(
     return course
 
 
-@router.delete("/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{course_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_course(
     course_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-) -> Any:
+) -> None:
     """Soft delete a course."""
     stmt = select(Course).where(
         Course.id == course_id,
@@ -128,7 +128,7 @@ async def delete_course(
     
     db.add(course)
     await db.commit()
-    return None
+
 
 @router.post("/{course_id}/generate", response_model=CourseResponse)
 async def start_course_generation(

@@ -44,8 +44,8 @@ async def search_documents(
 
     try:
         engine = InsightForgeEngine()
-        # Retrieve chunks using adapter
-        chunks = engine.adapter.retrieve_chunks(
+        # Retrieve chunks using the public engine API
+        chunks = engine.retrieve_chunks(
             query=request.query,
             doc_ids=valid_doc_ids,
             top_k=request.top_k

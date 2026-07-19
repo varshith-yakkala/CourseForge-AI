@@ -23,7 +23,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from core.config import settings
-from db.session import get_db_session
 from db.models.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
@@ -34,8 +33,13 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     Async database session dependency.
     Yields an AsyncSession and ensures it is closed after the request.
     """
-    async with get_db_session() as session:
-        yield session
+    from db.session import AsyncSessionLocal
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
 
 
 async def get_current_user(

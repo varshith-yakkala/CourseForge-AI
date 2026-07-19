@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 @pytest.mark.asyncio
 async def test_process_document_success(mocker):
@@ -12,16 +12,15 @@ async def test_process_document_success(mocker):
     mocker.patch("db.session.get_db_session", return_value=mock_session_cm)
     
     # Mock Document
-    mock_doc = type("Document", (), {"id": "123", "stored_path": "test.pdf", "index_status": "pending"})()
-    mock_result = AsyncMock()
+    mock_doc = type("Document", (), {"id": "123", "stored_path": "test.pdf", "index_status": "pending", "insightforge_doc_id": None, "chunk_count": None, "indexed_at": None})()
+    mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = mock_doc
     mock_session.execute.return_value = mock_result
     
     # Mock InsightForgeEngine
     mock_engine_instance = mocker.patch("tasks.document_tasks.InsightForgeEngine")
-    mock_adapter = mock_engine_instance.return_value.adapter
     mock_index_result = type("IndexResult", (), {"doc_id": "if_123", "chunk_count": 10})()
-    mock_adapter.index_document.return_value = mock_index_result
+    mock_engine_instance.return_value.index_document.return_value = mock_index_result
     
     result = await _process_document_async("123")
     
@@ -41,10 +40,11 @@ async def test_process_document_not_found(mocker):
     mocker.patch("db.session.get_db_session", return_value=mock_session_cm)
     
     # Mock Document Not Found
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result
     
     result = await _process_document_async("123")
     
     assert result == {"status": "error", "message": "Document not found"}
+

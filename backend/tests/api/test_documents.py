@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 @pytest.mark.asyncio
 async def test_upload_document(mocker):
@@ -14,18 +14,19 @@ async def test_upload_document(mocker):
     
     # Mock course retrieval to return a valid course
     mock_course = type("Course", (), {"id": "c_id", "owner_id": "123"})()
-    mock_result_course = AsyncMock()
+    mock_result_course = MagicMock()
     mock_result_course.scalar_one_or_none.return_value = mock_course
     
     # Mock doc retrieval to return None (no existing doc)
-    mock_result_doc = AsyncMock()
+    mock_result_doc = MagicMock()
     mock_result_doc.scalar_one_or_none.return_value = None
     
     mock_db.execute.side_effect = [mock_result_course, mock_result_doc]
     
-    with patch("builtins.open", mocker.mock_open()), patch("os.makedirs"):
+    with patch("builtins.open", mocker.mock_open()), patch("os.makedirs"), patch("tasks.document_tasks.process_document_task.delay"):
         result = await upload_document(course_id="c_id", file=mock_file, db=mock_db, current_user=mock_user)
         
         assert result.original_filename == "test.pdf"
         assert result.mime_type == "application/pdf"
         assert result.course_id == "c_id"
+

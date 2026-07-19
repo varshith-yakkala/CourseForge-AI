@@ -54,13 +54,16 @@ class InsightForgeAdapter:
             InsightForgeError: If InsightForge cannot be imported or initialized.
         """
         try:
-            # These imports resolve because Settings added the InsightForge root to sys.path
-            from backend.services.rag_service import RAGService  # type: ignore[import]
+            # Try importing directly or from backend package
+            try:
+                from services.rag_service import RAGService  # type: ignore[import]
+            except ImportError:
+                from backend.services.rag_service import RAGService  # type: ignore[import]
 
             rag = RAGService()
             logger.info(
                 "InsightForge RAGService loaded.",
-                extra={"insightforge_path": str(settings.insightforge_path)},
+                extra={"insightforge_path": str(settings.INSIGHTFORGE_PATH)},
             )
             return rag
 
