@@ -187,6 +187,12 @@ def _register_routers(app: FastAPI) -> None:
     from api.documents.routes import router as documents_router
     from api.search.routes import router as search_router
     from api.lessons.routes import router as lessons_router
+    from api.quizzes.routes import router as quizzes_router
+    from api.flashcards.routes import router as flashcards_router
+    from api.analytics.routes import router as analytics_router
+    from api.planner.routes import router as planner_router
+    from api.coach.routes import router as coach_router
+    from api.reports.routes import router as reports_router
 
     app.include_router(health_router, prefix=settings.API_V1_STR)
     app.include_router(auth_router, prefix=settings.API_V1_STR)
@@ -194,6 +200,14 @@ def _register_routers(app: FastAPI) -> None:
     app.include_router(documents_router, prefix=settings.API_V1_STR)
     app.include_router(search_router, prefix=settings.API_V1_STR)
     app.include_router(lessons_router, prefix=settings.API_V1_STR)
+    app.include_router(quizzes_router, prefix=settings.API_V1_STR)
+    app.include_router(flashcards_router, prefix=settings.API_V1_STR)
+    app.include_router(analytics_router, prefix=settings.API_V1_STR)
+    app.include_router(planner_router, prefix=settings.API_V1_STR)
+    app.include_router(coach_router, prefix=settings.API_V1_STR)
+    app.include_router(reports_router, prefix=settings.API_V1_STR)
+
+
 
 
 # ─────────────────────────────────────────────

@@ -46,8 +46,10 @@ import AnalyticsPage from '@/pages/AnalyticsPage';
 import SettingsPage from '@/pages/SettingsPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
-// Simple Flashcards stub since it wasn't explicitly scaffolded in the latest batch but exists in routes
-const FlashcardsPage = () => <div>Flashcards coming soon</div>;
+import FlashcardsPage from '@/pages/FlashcardsPage';
+import StudyPlannerPage from '@/pages/StudyPlannerPage';
+import CalendarPage from '@/pages/CalendarPage';
+import WeeklyReportPage from '@/pages/WeeklyReportPage';
 
 function ProtectedRoute({ children }) {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
@@ -80,12 +82,15 @@ export default function AppRouter() {
         <Route path="/courses/:id" element={<CourseDetailPage />} />
         <Route path="/learn/:courseId/:lessonId" element={<LessonViewerPage />} />
         <Route path="/learn/:courseId" element={<LessonViewerPage />} />
+        <Route path="/quiz/:courseId/:lessonId" element={<QuizPage />} />
         <Route path="/quiz/:quizId" element={<QuizPage />} />
-        {/* <Route path="/quiz/:quizId/result" element={<QuizResultPage />} /> */}
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/flashcards/:courseId" element={<FlashcardsPage />} />
-        {/* <Route path="/search" element={<SearchPage />} /> */}
+        <Route path="/analytics/:courseId" element={<AnalyticsPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/planner/:courseId" element={<StudyPlannerPage />} />
+        <Route path="/calendar/:courseId" element={<CalendarPage />} />
+        <Route path="/weekly-report/:courseId" element={<WeeklyReportPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
 

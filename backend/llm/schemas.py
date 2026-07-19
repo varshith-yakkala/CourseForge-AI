@@ -25,3 +25,43 @@ class CourseBlueprintResponse(BaseModel):
     estimated_duration_min: int = Field(description="Total estimated time in minutes")
     tags: list[str] = Field(description="5 relevant tags or keywords for the course")
     lessons: list[LessonOutline] = Field(description="List of lessons making up the course")
+
+
+class QuestionItemSchema(BaseModel):
+    question_text: str = Field(description="The question prompt")
+    question_type: str = Field(description="multiple_choice, true_false, fill_blank, short_answer, code_output")
+    options: list[str] | None = Field(default=None, description="Array of options for multiple choice or true/false")
+    correct_answer: str = Field(description="The correct answer text or option label")
+    explanation: str = Field(description="Detailed explanation of why the answer is correct")
+    difficulty: str = Field(default="Intermediate", description="Beginner, Intermediate, or Advanced")
+
+
+class QuizGenerationResponse(BaseModel):
+    title: str = Field(description="Quiz Title")
+    questions: list[QuestionItemSchema] = Field(description="List of generated questions in pool")
+
+
+class FlashcardItemSchema(BaseModel):
+    front: str = Field(description="Concept, vocabulary term, or question")
+    back: str = Field(description="Definition, explanation, and practical example")
+
+
+class FlashcardGenerationResponse(BaseModel):
+    flashcards: list[FlashcardItemSchema] = Field(description="List of generated flashcards")
+
+
+class DailyScheduleBlockSchema(BaseModel):
+    day_name: str = Field(description="e.g. Day 1, Monday, etc.")
+    title: str = Field(description="Title of study block or lesson")
+    activity_type: str = Field(description="lesson, quiz, flashcards, revision")
+    estimated_mins: int = Field(description="Duration in minutes")
+    lesson_id: str | None = Field(default=None)
+
+
+class StudyScheduleResponse(BaseModel):
+    schedule_blocks: list[DailyScheduleBlockSchema] = Field(description="List of planned daily study blocks")
+    estimated_completion_date: str = Field(description="ISO Date string or YYYY-MM-DD")
+    on_time_probability_pct: float = Field(description="Probability percentage 0-100%")
+    remaining_hours: float = Field(description="Total remaining hours")
+
+

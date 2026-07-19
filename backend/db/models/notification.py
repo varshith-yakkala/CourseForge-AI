@@ -9,9 +9,11 @@ class Notification(Base, UUIDMixin):
 
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     type: Mapped[str] = mapped_column(String(50), nullable=False)
+    priority: Mapped[str] = mapped_column(String(20), default="medium", index=True, nullable=False) # critical, high, medium, low
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     body: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, index=True, nullable=False)
     link: Mapped[str | None] = mapped_column(Text, nullable=True)
     metadata_ = mapped_column("metadata", JSONB, nullable=True)
     created_at = mapped_column(DateTime(timezone=True), nullable=False)
+

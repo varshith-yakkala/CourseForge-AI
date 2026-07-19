@@ -1,30 +1,48 @@
-# CourseForge AI — AI-Powered Interactive Learning Platform
+# CourseForge AI — AI-Powered Interactive Learning Platform (v1.0.0)
 
+![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)
 ![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 ![React](https://img.shields.io/badge/react-18.x-61dafb.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)
 ![Celery](https://img.shields.io/badge/Celery-5.4+-37814A.svg)
-![Tests](https://img.shields.io/badge/tests-27%2F27%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-36%2F36%20passing-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-**CourseForge AI** is a state-of-the-art AI-powered learning platform that transforms raw PDF documents into structured, interactive courses. Using a custom **Retrieval-Augmented Generation (RAG)** adapter, CourseForge AI parses document context, synthesizes course blueprints, generates on-demand interactive Markdown lessons with code syntax highlighting, tracks learning progress across sessions, and provides a scoped AI Tutor for instant lesson Q&A.
+**CourseForge AI** is a state-of-the-art AI-powered learning platform and personal **AI Learning Coach** that transforms raw PDF documents into structured, interactive courses. Powered by a custom **Retrieval-Augmented Generation (RAG)** adapter, CourseForge AI parses document context, synthesizes course blueprints, generates interactive Markdown lessons with code syntax highlighting, delivers SuperMemo SM-2 spaced repetition flashcards, adaptive quizzes, habit heatmaps, and proactive AI coaching advice.
 
 ---
 
-## 🌟 Features
+## 🚀 One-Command Docker Quickstart
+
+Launch the entire production stack (PostgreSQL, Redis, Celery Worker, FastAPI Backend, React Frontend, and Nginx Reverse Proxy) in a single command:
+
+```bash
+# Clone repository
+git clone https://github.com/varshith-yakkala/CourseForge-AI.git
+cd CourseForge-AI
+
+# Launch production stack
+docker-compose up -d --build
+```
+
+Access the application at `http://localhost`.
+
+---
+
+## 🌟 Key Platform Features
 
 - **📄 Smart PDF Document Ingestion**: Upload any PDF document with instant MIME validation, page extraction, and chunking.
 - **🔍 Hybrid Retrieval Engine**: Custom InsightForge-AI adapter utilizing FAISS vector search and BM25 keyword matching.
 - **🏗️ Automated Course Blueprint Generator**: Synthesizes structured course syllabi (Lessons, Topics, Subtopics, Key Terms) powered by Groq LLM.
 - **⚡ On-Demand Lesson Generation**: Lessons are generated lazily when opened, minimizing unnecessary LLM token consumption.
-- **💾 Dual-Layer Lesson Caching**: Instant cached retrieval for generated lessons with zero LLM latency on repeat visits.
-- **🔄 Background Async Workers**: Powered by Celery and Redis to handle document processing and asynchronous lesson generation without blocking HTTP requests.
-- **📖 Interactive Lesson Viewer**: Polished reading interface featuring breadcrumbs, estimated reading time, progress bar, table of contents, and previous/next navigation.
-- **🎨 Rich Markdown & Syntax Highlighting**: Full GitHub-Flavored Markdown (GFM) rendering with syntax highlighting for 10+ programming languages (`Python`, `Java`, `JavaScript`, `TypeScript`, `SQL`, `Bash`, `JSON`, `C++`, `HTML`, `CSS`).
-- **🤖 Scoped AI Lesson Tutor**: Embedded AI assistant panel that answers questions strictly constrained to the current lesson's content and document context.
-- **📊 Session-Persistent Progress Tracking**: Tracks started/completed status, percentage completed, reading duration, and last opened timestamp across devices.
-- **🔀 Lesson Versioning**: Incrementally version lessons (`v1` ➔ `v2`) on force-regeneration without losing historical metadata.
-- **🧪 100% Test Coverage**: Verified with 16 Pytest backend tests and 11 Vitest frontend component tests (27/27 passing).
+- **🎯 Adaptive Quizzes & Pool Sampling**: Multiple choice, True/False, fill-in-the-blank, short answer, and code output questions with difficulty selection (Beginner, Intermediate, Advanced) and partial credit scoring.
+- **🃏 SuperMemo SM-2 Flashcards**: 3D flip-card reader with confidence self-assessments recalculating spaced repetition intervals.
+- **🤖 Proactive AI Learning Coach**: Floating AI Coach widget providing contextual next-step guidance and streak reminders.
+- **📅 Adaptive Study Planner & Timeline**: Dynamic daily schedule rebalancing, pace predictions (completion date & on-time probability %), and multi-event visual calendar.
+- **📈 AI Weekly Intelligence Reports**: Synthesizes learning trends, weak/strong topic breakdowns, and exportable Markdown progress reports.
+- **🔒 Production Hardening**: Multi-stage Dockerfiles, Nginx proxy, security headers (`X-Frame-Options`, `HSTS`, `CSP`), `X-Request-ID` tracing, and health monitoring endpoints (`/health`, `/ready`, `/metrics`).
+- **🧪 100% Test Coverage**: Verified with 23 Pytest backend tests and 13 Vitest frontend component tests (36/36 passing).
+
 
 ---
 

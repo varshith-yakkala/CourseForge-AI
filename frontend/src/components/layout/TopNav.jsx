@@ -8,6 +8,8 @@ import { Dropdown } from '@/components/ui/Dropdown';
 import { Breadcrumb } from './Breadcrumb';
 import './TopNav.css';
 
+import { NotificationCenter } from './NotificationCenter';
+
 export function TopNav() {
   const setMobileMenu = useUIStore((state) => state.setMobileMenu);
   const setCommandPalette = useUIStore((state) => state.setCommandPalette);
@@ -45,9 +47,7 @@ export function TopNav() {
           <span className="cf-topnav-kbd">⌘K</span>
         </button>
         
-        <button className="cf-topnav-action cf-topnav-action--icon">
-          <Bell size={18} />
-        </button>
+        <NotificationCenter />
 
         <Dropdown 
           trigger={<div className="cf-topnav-avatar"><Avatar name={user?.full_name || 'User'} size="sm" /></div>}

@@ -1,5 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { coursesApi, documentsApi, searchApi, lessonsApi } from './services';
+import {
+  coursesApi,
+  documentsApi,
+  searchApi,
+  lessonsApi,
+  quizzesApi,
+  flashcardsApi,
+  analyticsApi,
+  plannerApi,
+  coachApi,
+  notificationsApi,
+  reportsApi,
+} from './services';
 
 // Course Hooks
 export const useCourses = () => {
@@ -142,6 +154,8 @@ export const useUpdateProgress = () => {
       lessonsApi.updateProgress(courseId, lessonId, progressData),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['progress', variables.courseId] });
+      queryClient.invalidateQueries({ queryKey: ['analytics', variables.courseId] });
+      queryClient.invalidateQueries({ queryKey: ['planner', variables.courseId] });
     },
   });
 };
@@ -160,4 +174,155 @@ export const useAskLessonTutor = () => {
       lessonsApi.askTutor(courseId, lessonId, question),
   });
 };
+
+// Phase 8: Quiz Hooks
+export const useQuiz = (courseId, lessonId, difficulty = 'Intermediate', numQuestions = 10) => {
+  return useQuery({
+    queryKey: ['quizzes', courseId, lessonId, difficulty],
+    queryFn: () => quizzesApi.getQuiz(courseId, lessonId, difficulty, numQuestions),
+    enabled: !!courseId && !!lessonId,
+  });
+};
+
+export const useSubmitQuiz = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ quizId, attemptData }) => quizzesApi.submitAttempt(quizId, attemptData),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['planner'] });
+    },
+  });
+};
+
+// Phase 8: Flashcard Hooks
+export const useFlashcards = (courseId, lessonId = null, mode = 'all') => {
+  return useQuery({
+    queryKey: ['flashcards', courseId, lessonId, mode],
+    queryFn: () => flashcardsApi.getDeck(courseId, lessonId, mode),
+    enabled: !!courseId,
+  });
+};
+
+export const useReviewFlashcard = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ flashcardId, rating }) => flashcardsApi.reviewCard(flashcardId, rating),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['flashcards'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+    },
+  });
+};
+
+// Phase 8: Analytics & Export Hooks
+export const useAnalytics = (courseId) => {
+  return useQuery({
+    queryKey: ['analytics', courseId],
+    queryFn: () => analyticsApi.getAnalytics(courseId),
+    enabled: !!courseId,
+  });
+};
+
+export const useRecommendations = (courseId) => {
+  return useQuery({
+    queryKey: ['recommendations', courseId],
+    queryFn: () => analyticsApi.getRecommendations(courseId),
+    enabled: !!courseId,
+  });
+};
+
+export const useUserAchievements = () => {
+  return useQuery({
+    queryKey: ['achievements'],
+    queryFn: analyticsApi.getUserAchievements,
+  });
+};
+
+export const useExportSummary = (courseId) => {
+  return useQuery({
+    queryKey: ['export', courseId],
+    queryFn: () => analyticsApi.exportSummary(courseId),
+    enabled: false,
+  });
+};
+
+// Phase 9: Planner, Calendar, Predictions, Coach, Notifications, Reports Hooks
+export const usePlannerSchedule = (courseId) => {
+  return useQuery({
+    queryKey: ['planner', courseId],
+    queryFn: () => plannerApi.getSchedule(courseId),
+    enabled: !!courseId,
+  });
+};
+
+export const useUpdatePlannerPlan = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courseId, planData }) => plannerApi.updatePlan(courseId, planData),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['planner', variables.courseId] });
+      queryClient.invalidateQueries({ queryKey: ['calendar', variables.courseId] });
+    },
+  });
+};
+
+export const useCalendarEvents = (courseId) => {
+  return useQuery({
+    queryKey: ['calendar', courseId],
+    queryFn: () => plannerApi.getCalendar(courseId),
+    enabled: !!courseId,
+  });
+};
+
+export const usePredictions = (courseId) => {
+  return useQuery({
+    queryKey: ['predictions', courseId],
+    queryFn: () => plannerApi.getPredictions(courseId),
+    enabled: !!courseId,
+  });
+};
+
+export const useCoachAdvice = (courseId = null) => {
+  return useQuery({
+    queryKey: ['coach', courseId],
+    queryFn: () => coachApi.getAdvice(courseId),
+  });
+};
+
+export const useHabits = (courseId) => {
+  return useQuery({
+    queryKey: ['habits', courseId],
+    queryFn: () => coachApi.getHabits(courseId),
+    enabled: !!courseId,
+  });
+};
+
+export const useNotifications = (priority = null) => {
+  return useQuery({
+    queryKey: ['notifications', priority],
+    queryFn: () => notificationsApi.getNotifications(priority),
+    refetchInterval: 10000, // Refresh notifications every 10s
+  });
+};
+
+export const useMarkNotificationRead = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => notificationsApi.markRead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+export const useWeeklyReport = (courseId) => {
+  return useQuery({
+    queryKey: ['weeklyReport', courseId],
+    queryFn: () => reportsApi.getWeeklyReport(courseId),
+    enabled: !!courseId,
+  });
+};
+
+
 

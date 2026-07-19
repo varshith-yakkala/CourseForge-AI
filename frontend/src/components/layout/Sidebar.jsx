@@ -2,13 +2,12 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/utils/classNames';
 import { useUIStore } from '@/store/useUIStore';
-import { LayoutDashboard, BookOpen, Search, BarChart3, Settings, Bookmark, Menu, ChevronLeft } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Search, BarChart3, Settings, Bookmark, Menu, ChevronLeft, Target, Calendar } from 'lucide-react';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: BookOpen, label: 'Courses', path: '/courses' },
-  { icon: Search, label: 'Search', path: '/search' },
   { icon: BarChart3, label: 'Analytics', path: '/analytics' },
 ];
 

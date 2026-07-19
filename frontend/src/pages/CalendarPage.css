@@ -1,0 +1,68 @@
+/* Calendar Page Styles */
+.cf-calendar-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-8, 32px) var(--space-4, 16px);
+}
+
+.cf-cal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4, 16px);
+  margin-bottom: var(--space-6, 24px);
+}
+
+.cf-cal-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+  margin: 0;
+}
+
+.cf-cal-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+}
+
+.cf-cal-event-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4, 16px);
+}
+
+.cf-cal-event-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+}
+
+.cf-cal-event-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  margin: 0;
+}
+
+.cf-cal-event-date {
+  font-size: 12px;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.cf-ev-lesson { color: #818cf8; }
+.cf-ev-quiz { color: #fbbf24; }
+.cf-ev-flashcards { color: #34d399; }
+.cf-ev-deadline { color: #f87171; }
+
+.cf-cal-status-badge {
+  font-size: 11px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.cf-cal-status--planned { background: var(--bg-tertiary, #334155); color: var(--text-secondary, #94a3b8); }
+.cf-cal-status--due { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.cf-cal-status--upcoming { background: rgba(99, 102, 241, 0.2); color: #818cf8; }

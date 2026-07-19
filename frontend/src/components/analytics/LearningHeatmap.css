@@ -1,0 +1,53 @@
+/* Learning Heatmap Styles */
+.cf-heatmap-wrapper {
+  background: var(--bg-secondary, #1e293b);
+  border: 1px solid var(--border-default, #334155);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-4, 16px);
+  margin-bottom: var(--space-6, 24px);
+}
+
+.cf-heatmap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3, 12px);
+}
+
+.cf-heatmap-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+}
+
+.cf-heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.cf-heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 6px;
+}
+
+.cf-heat-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--bg-tertiary, #334155);
+  transition: transform 0.15s ease;
+}
+
+.cf-heat-cell:hover {
+  transform: scale(1.3);
+}
+
+.cf-heat-0 { background: #334155; }
+.cf-heat-1 { background: #312e81; }
+.cf-heat-2 { background: #4338ca; }
+.cf-heat-3 { background: #6366f1; }
+.cf-heat-4 { background: #818cf8; }

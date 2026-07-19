@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Tabs } from '@/components/ui/Tabs';
 import { useCourse, useDeleteCourse, useCourseDocument, useRetryDocument, useSearch, useGenerateCourse, useCourseStructure } from '@/api/hooks';
 import { Skeleton } from '@/components/ui/Loading';
 import { EmptyState } from '@/components/ui/States';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Trash2, AlertCircle, RefreshCw, Search, FileText, Play } from 'lucide-react';
+import { Trash2, AlertCircle, RefreshCw, Search, FileText, Play, Layers, TrendingUp } from 'lucide-react';
 import { useNotificationStore } from '@/store/useNotificationStore';
 
 function CourseStructure({ courseId }) {
@@ -128,7 +128,13 @@ export default function CourseDetailPage() {
           <h1 className="text-heading-lg" style={{ marginBottom: 'var(--space-2)' }}>{course.title}</h1>
           <p className="text-body-md text-secondary">{course.description || 'No description available.'}</p>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          <Link to={`/flashcards/${id}`}>
+            <Button variant="outline" icon={Layers}>Flashcards</Button>
+          </Link>
+          <Link to={`/analytics/${id}`}>
+            <Button variant="outline" icon={TrendingUp}>Analytics</Button>
+          </Link>
           {document && document.index_status === 'ready' && course.status === 'processing' && (
             <Button variant="primary" icon={Play} onClick={handleGenerate} isLoading={generateCourse.isPending}>
               Generate Course Blueprint

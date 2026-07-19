@@ -18,3 +18,8 @@ from .analytics_event import AnalyticsEvent
 from .notification import Notification
 from .bookmark import Bookmark
 from .certificate import Certificate
+from .achievement import UserAchievement
+from .study_plan import StudyPlan
+from .weekly_report import WeeklyReport
+
+

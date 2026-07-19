@@ -1,0 +1,142 @@
+/* Notification Center Styles */
+.cf-notif-center {
+  position: relative;
+}
+
+.cf-notif-bell-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #94a3b8);
+  position: relative;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-md, 8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.cf-notif-bell-btn:hover {
+  color: var(--text-primary, #f8fafc);
+  background: var(--bg-tertiary, #334155);
+}
+
+.cf-notif-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: var(--color-danger, #ef4444);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 1px 5px;
+  line-height: 1;
+}
+
+.cf-notif-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 340px;
+  background: var(--bg-secondary, #1e293b);
+  border: 1px solid var(--border-default, #334155);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.cf-notif-header {
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  border-bottom: 1px solid var(--border-default, #334155);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cf-notif-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  margin: 0;
+}
+
+.cf-notif-filters {
+  display: flex;
+  gap: 4px;
+}
+
+.cf-n-filter-btn {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.cf-n-filter--active {
+  background: var(--color-brand-primary, #6366f1);
+  color: #fff;
+}
+
+.cf-notif-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.cf-notif-empty {
+  padding: var(--space-6, 24px);
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.cf-notif-item {
+  display: flex;
+  gap: var(--space-3, 12px);
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  border-bottom: 1px solid var(--border-default, #334155);
+  align-items: flex-start;
+}
+
+.cf-notif--unread {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.cf-n-critical { color: #ef4444; }
+.cf-n-high { color: #f59e0b; }
+.cf-n-medium { color: #818cf8; }
+.cf-n-low { color: #34d399; }
+
+.cf-notif-body {
+  flex: 1;
+}
+
+.cf-notif-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  line-height: 1.3;
+}
+
+.cf-notif-item-desc {
+  font-size: 11px;
+  color: var(--text-secondary, #94a3b8);
+  margin-top: 2px;
+}
+
+.cf-notif-check {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  padding: 2px;
+}
+
+.cf-notif-check:hover {
+  color: var(--color-success, #10b981);
+}

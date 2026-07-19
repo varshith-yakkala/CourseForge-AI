@@ -1,38 +1,42 @@
-# Changelog
+# Changelog — CourseForge AI
 
-All notable changes to this project will be documented in this file.
+All notable changes to the CourseForge AI project are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v0.6.0] - 2026-07-18
+---
 
-### Added
-- **Phase 6: AI Course Generation Engine (Blueprint)**
-  - `PromptManager` implementation for strict versioned LLM prompt orchestration.
-  - `CourseGeneratorService` to convert extracted document context into educational structures.
-  - Pydantic models for ensuring generated LLM JSON structural integrity.
-  - Asynchronous background Celery task `generate_course_task`.
-  - Frontend polling and real-time generation status visualization in `CourseDetailPage`.
-- **Phase 5: InsightForge Integration & Document Processing**
-  - Adapter connection to `InsightForge-AI` for automated document ingestion.
-  - Celery background pipeline for large PDF processing and indexing.
-  - Hybrid FAISS + BM25 Search API over chunks.
-  - Retry capabilities for failed ingestion pipelines.
-- **Phase 4: Dashboard & Course Management**
-  - E2E frontend state management with React Query.
-  - Robust routing and protected layouts.
-  - Backend PDF file ingestion capabilities.
-  - End-to-end Course CRUD operations.
-- **Phase 3: Frontend Design System & Application Shell**
-  - Foundational styling structure (Light/Dark themes).
-  - Robust reusable React component library (Buttons, Modals, Forms, Inputs, Alerts).
-  - Modern typography and micro-animations for an elevated user experience.
-- **Phase 2: Database & Authentication**
-  - PostgreSQL Database architecture with Alembic migrations.
-  - Complete SQLAlchemy ORM models (Courses, Lessons, Documents, Topics).
-  - JWT token-based robust authentication system.
-- **Phase 1: Foundation & Architecture**
-  - Core FastAPI backend structure and configurations.
-  - React + Vite + Vanilla CSS frontend boilerplate.
-  - Base monolithic setup.
+## [1.0.0] — 2026-07-19
+
+### 🚀 Production Hardening & Official v1.0.0 Release
+
+#### Added
+- **Multi-Stage Dockerization**: Production `Dockerfile` for backend and frontend, and root `docker-compose.yml` orchestrating PostgreSQL 15, Redis 7, Celery Worker, FastAPI, and Nginx.
+- **Security Headers Middleware**: Enforced `X-Frame-Options`, `X-Content-Type-Options`, `Strict-Transport-Security`, `Content-Security-Policy`, and CORS origin validation.
+- **Request Tracing**: `X-Request-ID` header injection and propagation across request logs and Celery tasks.
+- **Health & Readiness Endpoints**: Added `/health` (liveness), `/ready` (DB, Redis, Celery, InsightForge readiness), and `/metrics` (CPU, Memory, Uptime).
+- **Personalized Learning Intelligence (Phase 9)**: Adaptive Study Planner, Multi-Event Learning Calendar, Learning Pace Predictions, Habit Heatmap Grid, Proactive AI Learning Coach widget, Priority Smart Notifications, and AI Weekly Report.
+- **Assessment & Reinforcement Engine (Phase 8)**: Adaptive Difficulty Quizzes, Pool Sampling, Partial Credit, 3D Flashcard Reader, SuperMemo SM-2 Spaced Repetition, and Gamification Badges.
+- **Interactive AI Lessons (Phase 7)**: Markdown Lesson Generator, Lesson Lifecycle, AI Tutor, and Versioning.
+
+#### Changed
+- Upgraded repository structure, documentation, and error handling for production readiness.
+- Standardized API JSON error responses with `request_id` and timestamps.
+
+---
+
+## [0.8.0] — 2026-07-19
+
+### 🧠 Assessment Engine & Flashcards
+- Implemented SuperMemo SM-2 algorithm.
+- Added adaptive quiz generator with difficulty selection.
+- Added learning analytics dashboard and weak topic identification.
+
+---
+
+## [0.7.0] — 2026-07-19
+
+### 📚 Interactive Lessons & AI Tutor
+- Added on-demand AI lesson generation.
+- Added AI Lesson Tutor sidebar for in-lesson Q&A.
+- Added lesson progress tracking and version history.

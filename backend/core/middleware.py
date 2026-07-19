@@ -1,17 +1,18 @@
 """
-CourseForge AI — CORS and Request Logging Middleware
+CourseForge AI — Middleware Suite (CORS, Security Headers, Request ID & Request Logging)
 
 Registers:
     1. CORS middleware — allows the React frontend to call the API.
-    2. Request logging middleware — logs every request with method, path, status, duration.
-
-Both are registered in main.py via register_middleware(app).
+    2. Security Headers middleware — enforces CSP, X-Frame-Options, HSTS, X-Content-Type-Options.
+    3. Request ID middleware — generates/propagates unique X-Request-ID for request tracing.
+    4. Request logging middleware — logs every request with method, path, status, duration.
 """
 
 from __future__ import annotations
 
 import logging
 import time
+import uuid
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,10 +26,10 @@ logger = logging.getLogger(__name__)
 def register_middleware(app: FastAPI) -> None:
     """
     Register all middleware on the FastAPI application instance.
-    Order matters: middleware is applied bottom-up (last registered = outermost).
     """
     _register_cors(app)
-    _register_request_logger(app)
+    app.add_middleware(_SecurityHeadersMiddleware)
+    app.add_middleware(_RequestLoggingMiddleware)
 
 
 def _register_cors(app: FastAPI) -> None:
@@ -43,30 +44,33 @@ def _register_cors(app: FastAPI) -> None:
     )
 
 
-def _register_request_logger(app: FastAPI) -> None:
-    """Log every incoming request with timing information."""
-    app.add_middleware(_RequestLoggingMiddleware)
+class _SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Enforces production security headers on all responses."""
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response = await call_next(request)
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+        if settings.APP_ENV == "production":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
 
 
 class _RequestLoggingMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware that logs every HTTP request.
+    """Logs every HTTP request and propagates X-Request-ID."""
 
-    Logs:
-        - Method + path + query string
-        - Response status code
-        - Total processing time in milliseconds
-        - Client IP address
-    """
-
-    async def dispatch(self, request: Request, call_next) -> Response:  # type: ignore[override]
+    async def dispatch(self, request: Request, call_next) -> Response:
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
         start_time = time.perf_counter()
 
         response = await call_next(request)
 
         duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
-        # Add processing time header for debugging
+        response.headers["X-Request-ID"] = request_id
         response.headers["X-Process-Time"] = f"{duration_ms}ms"
 
         log_level = logging.WARNING if response.status_code >= 500 else logging.INFO
@@ -75,6 +79,7 @@ class _RequestLoggingMiddleware(BaseHTTPMiddleware):
             log_level,
             "HTTP request",
             extra={
+                "request_id": request_id,
                 "method": request.method,
                 "path": request.url.path,
                 "query": str(request.url.query) or None,

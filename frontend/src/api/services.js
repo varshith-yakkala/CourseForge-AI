@@ -108,3 +108,98 @@ export const lessonsApi = {
   },
 };
 
+export const quizzesApi = {
+  getQuiz: async (courseId, lessonId, difficulty = 'Intermediate', numQuestions = 10) => {
+    const { data } = await apiClient.get(`/courses/${courseId}/lessons/${lessonId}/quiz`, {
+      params: { difficulty, num_questions: numQuestions },
+    });
+    return data;
+  },
+  submitAttempt: async (quizId, attemptData) => {
+    const { data } = await apiClient.post(`/quizzes/${quizId}/submit`, attemptData);
+    return data;
+  },
+};
+
+export const flashcardsApi = {
+  getDeck: async (courseId, lessonId = null, mode = 'all') => {
+    const { data } = await apiClient.get(`/courses/${courseId}/flashcards`, {
+      params: { lesson_id: lessonId, mode },
+    });
+    return data;
+  },
+  reviewCard: async (flashcardId, rating) => {
+    const { data } = await apiClient.post(`/flashcards/${flashcardId}/review`, { rating });
+    return data;
+  },
+};
+
+export const analyticsApi = {
+  getAnalytics: async (courseId) => {
+    const { data } = await apiClient.get(`/courses/${courseId}/analytics`);
+    return data;
+  },
+  getRecommendations: async (courseId) => {
+    const { data } = await apiClient.get(`/courses/${courseId}/recommendations`);
+    return data;
+  },
+  getUserAchievements: async () => {
+    const { data } = await apiClient.get('/user/achievements');
+    return data;
+  },
+  exportSummary: async (courseId) => {
+    const { data } = await apiClient.get(`/courses/${courseId}/export`);
+    return data;
+  },
+};
+
+export const plannerApi = {
+  getSchedule: async (courseId) => {
+    const { data } = await apiClient.get(`/courses/${courseId}/planner`);
+    return data;
+  },
+  updatePlan: async (courseId, planData) => {
+    const { data } = await apiClient.post(`/courses/${courseId}/planner`, planData);
+    return data;
+  },
+  getCalendar: async (courseId) => {
+    const { data } = await apiClient.get(`/courses/${courseId}/calendar`);
+    return data;
+  },
+  getPredictions: async (courseId) => {
+    const { data } = await apiClient.get(`/courses/${courseId}/predictions`);
+    return data;
+  },
+};
+
+export const coachApi = {
+  getAdvice: async (courseId = null) => {
+    const { data } = await apiClient.get('/coach/advice', { params: { course_id: courseId } });
+    return data;
+  },
+  getHabits: async (courseId) => {
+    const { data } = await apiClient.get(`/coach/habits/${courseId}`);
+    return data;
+  },
+};
+
+export const notificationsApi = {
+  getNotifications: async (priority = null) => {
+    const { data } = await apiClient.get('/notifications', { params: { priority } });
+    return data;
+  },
+  markRead: async (id) => {
+    const { data } = await apiClient.post(`/notifications/${id}/read`);
+    return data;
+  },
+};
+
+export const reportsApi = {
+  getWeeklyReport: async (courseId) => {
+    const { data } = await apiClient.get(`/courses/${courseId}/weekly-report`);
+    return data;
+  },
+};
+
+
+

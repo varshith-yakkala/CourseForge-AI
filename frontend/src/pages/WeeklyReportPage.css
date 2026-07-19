@@ -1,0 +1,80 @@
+/* Weekly Report Page Styles */
+.cf-report-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-8, 32px) var(--space-4, 16px);
+}
+
+.cf-report-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4, 16px);
+  margin-bottom: var(--space-6, 24px);
+}
+
+.cf-report-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+  margin: 0;
+}
+
+.cf-scores-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4, 16px);
+  margin-bottom: var(--space-6, 24px);
+}
+
+.cf-score-card {
+  padding: var(--space-5, 20px);
+  text-align: center;
+}
+
+.cf-score-label {
+  font-size: 13px;
+  color: var(--text-secondary, #94a3b8);
+  font-weight: 500;
+}
+
+.cf-score-val {
+  font-size: 36px;
+  font-weight: 800;
+  margin: var(--space-2, 8px) 0;
+}
+
+.cf-score-sub {
+  font-size: 12px;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.cf-insights-card {
+  padding: var(--space-5, 20px);
+  margin-bottom: var(--space-6, 24px);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.cf-insights-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-brand-primary, #818cf8);
+  margin: 0 0 var(--space-3, 12px) 0;
+}
+
+.cf-insights-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-primary, #f8fafc);
+}
+
+.cf-report-markdown-card {
+  padding: var(--space-6, 24px);
+}
