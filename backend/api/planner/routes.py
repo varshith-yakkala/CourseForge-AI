@@ -2,8 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
-from db.session import get_db
-from core.dependencies import get_current_user
+from api.deps import get_db, get_current_user
 from db.models.user import User
 from services.study_planner_service import StudyPlannerService
 from services.learning_prediction_service import LearningPredictionService

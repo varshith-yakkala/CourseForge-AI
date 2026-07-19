@@ -1,6 +1,22 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import bcrypt
+
+# Fix passlib 1.7.4 compatibility with bcrypt >= 4.0
+if not hasattr(bcrypt, "__about__"):
+    bcrypt.__about__ = type("about", (), {"__version__": bcrypt.__version__})  # type: ignore[attr-defined]
+_orig_hashpw = bcrypt.hashpw
+
+
+def _safe_hashpw(password: bytes, salt: bytes) -> bytes:
+    if isinstance(password, bytes) and len(password) > 72:
+        password = password[:72]
+    return _orig_hashpw(password, salt)
+
+
+bcrypt.hashpw = _safe_hashpw  # type: ignore[assignment]
+
 from jose import jwt
 from passlib.context import CryptContext
 

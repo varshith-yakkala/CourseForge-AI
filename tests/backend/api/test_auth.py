@@ -7,6 +7,7 @@ from core.security import verify_password
 @pytest.mark.asyncio
 async def test_register_user(client: AsyncClient, db_session):
     """Test user registration."""
+    db_session.execute.return_value.scalar_one_or_none.return_value = None
     response = await client.post(
         "/api/v1/auth/register",
         json={
@@ -25,6 +26,7 @@ async def test_register_user(client: AsyncClient, db_session):
 @pytest.mark.asyncio
 async def test_register_existing_user(client: AsyncClient, db_session, test_user):
     """Test registering an email that already exists."""
+    db_session.execute.return_value.scalar_one_or_none.return_value = test_user
     response = await client.post(
         "/api/v1/auth/register",
         json={
@@ -40,6 +42,7 @@ async def test_register_existing_user(client: AsyncClient, db_session, test_user
 @pytest.mark.asyncio
 async def test_login_user(client: AsyncClient, db_session, test_user):
     """Test login with correct credentials."""
+    db_session.execute.return_value.scalar_one_or_none.return_value = test_user
     response = await client.post(
         "/api/v1/auth/login",
         json={
@@ -58,6 +61,7 @@ async def test_login_user(client: AsyncClient, db_session, test_user):
 @pytest.mark.asyncio
 async def test_login_wrong_password(client: AsyncClient, db_session, test_user):
     """Test login with incorrect password."""
+    db_session.execute.return_value.scalar_one_or_none.return_value = test_user
     response = await client.post(
         "/api/v1/auth/login",
         json={

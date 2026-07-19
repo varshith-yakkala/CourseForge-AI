@@ -60,17 +60,76 @@ def app():
 def app_client(app) -> Generator:
     """
     Synchronous HTTP test client for the FastAPI application.
-
-    Use for testing API endpoints that don't require async.
-    Scope: session — shared across all tests.
-
-    Example:
-        def test_health(app_client):
-            response = app_client.get("/api/v1/health")
-            assert response.status_code == 200
     """
     with TestClient(app, raise_server_exceptions=True) as client:
         yield client
+
+
+@pytest.fixture
+def db_session(mocker, app):
+    """
+    Mock AsyncSession for route tests and override get_db dependency.
+    """
+    import uuid
+    from datetime import datetime, timezone
+
+    session = mocker.AsyncMock()
+    mock_result = mocker.MagicMock()
+    mock_result.scalar_one_or_none.return_value = None
+    mock_result.scalar_one.side_effect = lambda: mock_result.scalar_one_or_none.return_value
+    mock_result.scalars.return_value.all.return_value = []
+    session.execute = mocker.AsyncMock(return_value=mock_result)
+    
+    async def _mock_refresh(instance):
+        if hasattr(instance, "id") and instance.id is None:
+            instance.id = uuid.uuid4()
+        if hasattr(instance, "role") and instance.role is None:
+            instance.role = "student"
+        if hasattr(instance, "is_active") and instance.is_active is None:
+            instance.is_active = True
+        if hasattr(instance, "is_verified") and instance.is_verified is None:
+            instance.is_verified = False
+        if hasattr(instance, "created_at") and instance.created_at is None:
+            instance.created_at = datetime.now(timezone.utc)
+        if hasattr(instance, "updated_at") and instance.updated_at is None:
+            instance.updated_at = datetime.now(timezone.utc)
+
+    session.refresh = mocker.AsyncMock(side_effect=_mock_refresh)
+
+    async def _override_get_db():
+        yield session
+
+    from api.deps import get_db
+    app.dependency_overrides[get_db] = _override_get_db
+    yield session
+    app.dependency_overrides.pop(get_db, None)
+
+
+@pytest.fixture
+def test_user():
+    import uuid
+    from datetime import datetime, timezone
+    from db.models.user import User
+    from core.security import get_password_hash
+    now = datetime.now(timezone.utc)
+    return User(
+        id=uuid.uuid4(),
+        email="test@example.com",
+        hashed_password=get_password_hash("testpassword123"),
+        full_name="Test User",
+        role="user",
+        is_active=True,
+        is_verified=True,
+        created_at=now,
+        updated_at=now,
+    )
+
+
+@pytest.fixture
+async def client(app):
+    from httpx import AsyncClient, ASGITransport
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
 
 
 @pytest.fixture(autouse=True)
