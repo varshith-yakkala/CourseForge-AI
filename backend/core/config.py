@@ -77,7 +77,7 @@ class Settings(BaseSettings):
     # ─────────────────────────────────────────────
     # INSIGHTFORGE INTEGRATION
     # ─────────────────────────────────────────────
-    INSIGHTFORGE_PATH: str = "./insightforge-ai"
+    INSIGHTFORGE_PATH: str | None = None
 
     # ─────────────────────────────────────────────
     # AI — GROQ
@@ -201,8 +201,10 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
 
     @property
-    def insightforge_path(self) -> Path:
-        """Resolved absolute path to InsightForge-AI project."""
+    def insightforge_path(self) -> Path | None:
+        """Resolved absolute path to InsightForge-AI project if configured."""
+        if not self.INSIGHTFORGE_PATH:
+            return None
         return Path(self.INSIGHTFORGE_PATH).resolve()
 
     @property
@@ -253,19 +255,14 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_insightforge_path(self) -> "Settings":
-        path = Path(self.INSIGHTFORGE_PATH)
-        if not path.exists():
-            import warnings
-            if self.APP_ENV == "production":
-                raise ValueError(
-                    f"INSIGHTFORGE_PATH does not exist: {path}\n"
-                    "Ensure InsightForge-AI is cloned at the configured path."
-                )
-            else:
+        if self.INSIGHTFORGE_PATH:
+            path = Path(self.INSIGHTFORGE_PATH)
+            if not path.exists():
+                import warnings
                 warnings.warn(
                     f"\n[CourseForge] INSIGHTFORGE_PATH does not exist: {path}\n"
-                    "InsightForge-AI features (search, generation) will be unavailable.\n"
-                    "Set INSIGHTFORGE_PATH in backend/.env to enable AI features.",
+                    "External InsightForge-AI directory not found. "
+                    "Using bundled internal package.",
                     UserWarning,
                     stacklevel=2,
                 )
@@ -275,12 +272,15 @@ class Settings(BaseSettings):
     def ensure_insightforge_on_sys_path(self) -> "Settings":
         """
         Add InsightForge-AI to sys.path so its modules can be imported
-        by the InsightForge adapter without modification.
+        by the InsightForge adapter without modification if configured.
         Only adds the path if it actually exists to avoid polluting sys.path.
         """
-        insight_path = str(Path(self.INSIGHTFORGE_PATH).resolve())
-        if Path(self.INSIGHTFORGE_PATH).exists() and insight_path not in sys.path:
-            sys.path.insert(0, insight_path)
+        if self.INSIGHTFORGE_PATH:
+            path = Path(self.INSIGHTFORGE_PATH)
+            if path.exists():
+                insight_path = str(path.resolve())
+                if insight_path not in sys.path:
+                    sys.path.insert(0, insight_path)
         return self
 
 

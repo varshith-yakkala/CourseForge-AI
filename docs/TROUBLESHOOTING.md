@@ -41,4 +41,4 @@ Tasks remain in `PENDING` state indefinitely.
 Warning log: `[CourseForge] INSIGHTFORGE_PATH does not exist`.
 
 ### Solution
-CourseForge AI automatically operates in mock/demonstration mode when InsightForge is not present locally. Set `INSIGHTFORGE_PATH` in `.env` to connect live RAG models.
+CourseForge AI automatically operates using its bundled internal InsightForge engine when no external path is configured. If you wish to override with an external InsightForge repository clone, set `INSIGHTFORGE_PATH` in `.env`.

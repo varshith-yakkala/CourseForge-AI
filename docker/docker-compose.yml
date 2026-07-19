@@ -84,8 +84,8 @@ services:
       POSTGRES_HOST: postgres
       REDIS_HOST: redis
     volumes:
-      # Mount InsightForge at the configured path
-      - ${INSIGHTFORGE_PATH}:/insightforge:ro
+      # Optional: Mount InsightForge at the configured path (if using external repo)
+      - ${INSIGHTFORGE_PATH:-./insightforge-ai}:/insightforge:ro
       # Persist uploads and exports
       - uploads_data:/app/uploads
       - exports_data:/app/exports
@@ -125,7 +125,7 @@ services:
       --concurrency=2
       --max-tasks-per-child=100
     volumes:
-      - ${INSIGHTFORGE_PATH}:/insightforge:ro
+      - ${INSIGHTFORGE_PATH:-./insightforge-ai}:/insightforge:ro
       - uploads_data:/app/uploads
       - exports_data:/app/exports
       - logs_data:/app/logs

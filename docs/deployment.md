@@ -54,4 +54,4 @@ Services started:
 | `DATABASE_URL` | Async PostgreSQL connection string | `postgresql+asyncpg://user:pass@host:5432/db` |
 | `REDIS_URL` | Redis connection URL | `redis://host:6379/0` |
 | `JWT_SECRET` | Secret key for signing JWT tokens | `<strong-secret-key>` |
-| `INSIGHTFORGE_PATH` | Path to InsightForge RAG Engine | `/path/to/InsightForge-AI` |
+| `INSIGHTFORGE_PATH` | (Optional) Path to external InsightForge RAG Engine override | Unset (uses bundled internal engine) |

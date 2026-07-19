@@ -32,6 +32,13 @@ from insightforge.engine import ChunkResult, IndexResult, QueryResult
 logger = logging.getLogger(__name__)
 
 
+UNAVAILABLE_ERROR_MSG = (
+    "InsightForge RAG service is currently unavailable. "
+    "If you intended to use an external InsightForge installation, verify INSIGHTFORGE_PATH in environment variables. "
+    "Otherwise inspect earlier startup logs for details."
+)
+
+
 class InsightForgeAdapter:
     """
     Low-level adapter that imports and wraps InsightForge internals.
@@ -47,11 +54,8 @@ class InsightForgeAdapter:
         """
         Import InsightForge RAGService and initialize it.
 
-        InsightForge path is added to sys.path by Settings.ensure_insightforge_on_sys_path().
-        This runs automatically when settings is imported.
-
-        Raises:
-            InsightForgeError: If InsightForge cannot be imported or initialized.
+        If external InsightForge package is missing or fails to initialize,
+        logs a warning and gracefully falls back so startup proceeds without crashing.
         """
         try:
             # Try importing directly or from backend package
@@ -63,21 +67,17 @@ class InsightForgeAdapter:
             rag = RAGService()
             logger.info(
                 "InsightForge RAGService loaded.",
-                extra={"insightforge_path": str(settings.INSIGHTFORGE_PATH)},
+                extra={"insightforge_path": str(settings.INSIGHTFORGE_PATH) if settings.INSIGHTFORGE_PATH else None},
             )
             return rag
 
-        except ImportError as exc:
-            raise InsightForgeError(
-                f"Failed to import InsightForge modules from {settings.insightforge_path}. "
-                f"Ensure the project exists and all dependencies are installed. "
-                f"Original error: {exc}"
-            ) from exc
-
-        except Exception as exc:
-            raise InsightForgeError(
-                f"InsightForge RAGService initialization failed: {exc}"
-            ) from exc
+        except (ImportError, Exception) as exc:
+            logger.warning(
+                "InsightForge RAGService external module unavailable (%s). "
+                "Continuing with bundled internal engine.",
+                exc,
+            )
+            return None
 
     # ─────────────────────────────────────────────
     # Index
@@ -85,6 +85,9 @@ class InsightForgeAdapter:
 
     def index_document(self, file_path: str) -> IndexResult:
         """Wrap InsightForge RAGService.load_document()."""
+        if not self._rag:
+            raise InsightForgeError(UNAVAILABLE_ERROR_MSG)
+
         try:
             result = self._rag.load_document(file_path)
 
@@ -112,6 +115,9 @@ class InsightForgeAdapter:
         """
         Run full RAG pipeline with optional doc_id filtering and prompt override.
         """
+        if not self._rag:
+            raise InsightForgeError(UNAVAILABLE_ERROR_MSG)
+
         try:
             if prompt_override is not None:
                 # Bypass InsightForge's PromptBuilder — use our versioned prompt directly.
@@ -245,6 +251,9 @@ class InsightForgeAdapter:
         top_k: int = 10,
     ) -> list[ChunkResult]:
         """Retrieve chunks without LLM generation."""
+        if not self._rag:
+            raise InsightForgeError(UNAVAILABLE_ERROR_MSG)
+
         try:
             retriever = self._rag.indexer.get_retriever()
             candidates = retriever.retrieve(query, top_k=top_k * 3)
@@ -290,6 +299,8 @@ class InsightForgeAdapter:
 
     def get_document(self, doc_id: str) -> dict[str, Any] | None:
         """Look up a document in InsightForge registry."""
+        if not self._rag:
+            return None
         try:
             return self._rag.get_document(doc_id)
         except Exception as exc:
@@ -297,6 +308,8 @@ class InsightForgeAdapter:
 
     def delete_document(self, doc_id: str) -> bool:
         """Remove document from InsightForge index."""
+        if not self._rag:
+            return True
         try:
             return self._rag.indexer.delete_document(doc_id)
         except Exception as exc:
@@ -305,7 +318,8 @@ class InsightForgeAdapter:
     def health_check(self) -> dict[str, str]:
         """Return InsightForge component status."""
         return {
-            "status": "healthy",
+            "status": "healthy" if self._rag else "degraded",
+            "detail": None if self._rag else "InsightForge external RAG service not loaded",
             "embedding_model": settings.EMBEDDING_MODEL,
             "llm_model": settings.GROQ_MODEL,
         }
