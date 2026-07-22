@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/Loading';
 import { EmptyState } from '@/components/ui/States';
 import { Button } from '@/components/ui/Button';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import { extractApiError } from '@/utils/errorUtils';
 import {
   ChevronLeft,
   ChevronRight,
@@ -128,7 +129,7 @@ export default function LessonViewerPage() {
     } catch (err) {
       addNotification({
         title: 'Update Failed',
-        message: 'Could not update progress.',
+        message: extractApiError(err),
         type: 'error',
       });
     }
@@ -145,7 +146,7 @@ export default function LessonViewerPage() {
     } catch (err) {
       addNotification({
         title: 'Regeneration Failed',
-        message: 'Could not regenerate lesson.',
+        message: extractApiError(err),
         type: 'error',
       });
     }

@@ -18,6 +18,8 @@ import {
   Sparkles,
   ArrowLeft,
 } from 'lucide-react';
+import { useNotificationStore } from '@/store/useNotificationStore';
+import { extractApiError } from '@/utils/errorUtils';
 import './QuizPage.css';
 
 export default function QuizPage() {
@@ -84,7 +86,12 @@ export default function QuizPage() {
       setResult(res);
       setIsSubmitted(true);
     } catch (err) {
-      console.error('Failed to submit quiz:', err);
+      const addNotification = useNotificationStore.getState().addNotification;
+      addNotification({
+        title: 'Quiz Submission Failed',
+        message: extractApiError(err),
+        type: 'error',
+      });
     }
   };
 

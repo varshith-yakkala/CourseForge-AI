@@ -6,6 +6,7 @@ import { Input } from './Input';
 import { Progress } from './Progress';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { useCreateCourse, useUploadDocument } from '@/api/hooks';
+import { extractApiError } from '@/utils/errorUtils';
 import { UploadCloud, FileText } from 'lucide-react';
 
 export function UploadModal({ isOpen, onClose }) {
@@ -64,7 +65,7 @@ export function UploadModal({ isOpen, onClose }) {
     } catch (error) {
       addNotification({ 
         title: 'Upload failed', 
-        message: error.response?.data?.detail || 'An error occurred during upload.', 
+        message: extractApiError(error), 
         type: 'error' 
       });
       setStep(1);

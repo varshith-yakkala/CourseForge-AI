@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { MarkdownViewer } from '@/components/ui/MarkdownViewer';
 import { useAskLessonTutor } from '@/api/hooks';
+import { extractApiError } from '@/utils/errorUtils';
 import './LessonTutorPanel.css';
 
 export function LessonTutorPanel({ isOpen, onClose, courseId, lessonId, lessonTitle }) {
@@ -42,7 +43,7 @@ export function LessonTutorPanel({ isOpen, onClose, courseId, lessonId, lessonTi
       const errorMsg = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I ran into an issue answering your question. Please try asking again.',
+        content: `**Error:** ${extractApiError(err)}`,
       };
       setMessages((prev) => [...prev, errorMsg]);
     }

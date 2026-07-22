@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authApi } from '@/api/services';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import { extractApiError } from '@/utils/errorUtils';
 
 export default function LoginPage() {
   const login = useAuthStore(state => state.login);
@@ -29,7 +30,7 @@ export default function LoginPage() {
     } catch (error) {
       addNotification({
         title: 'Login failed',
-        message: error.response?.data?.detail || 'Please check your credentials and try again.',
+        message: extractApiError(error),
         type: 'error',
       });
     } finally {

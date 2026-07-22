@@ -7,6 +7,8 @@ import {
   useCourse,
 } from '@/api/hooks';
 import { Button } from '@/components/ui/Button';
+import { useNotificationStore } from '@/store/useNotificationStore';
+import { extractApiError } from '@/utils/errorUtils';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Loading';
@@ -36,13 +38,23 @@ export default function StudyPlannerPage() {
 
   const handleUpdatePlan = async (e) => {
     e.preventDefault();
+    const addNotification = useNotificationStore.getState().addNotification;
     try {
       await updatePlan.mutateAsync({
         courseId,
         planData: { daily_goal_min: parseInt(dailyMins, 10) },
       });
+      addNotification({
+        title: 'Plan Updated',
+        message: 'Your study goal has been saved.',
+        type: 'success',
+      });
     } catch (err) {
-      console.error('Failed to update plan:', err);
+      addNotification({
+        title: 'Plan Update Failed',
+        message: extractApiError(err),
+        type: 'error',
+      });
     }
   };
 

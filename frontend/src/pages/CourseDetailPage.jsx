@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Trash2, AlertCircle, RefreshCw, Search, FileText, Play, Layers, TrendingUp } from 'lucide-react';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import { extractApiError } from '@/utils/errorUtils';
 
 function CourseStructure({ courseId }) {
   const { data: structure, isLoading } = useCourseStructure(courseId);
@@ -72,7 +73,7 @@ export default function CourseDetailPage() {
         addNotification({ title: 'Course deleted', message: 'The course has been removed.', type: 'success' });
         navigate('/courses');
       } catch (error) {
-        addNotification({ title: 'Delete failed', message: 'Failed to delete the course.', type: 'error' });
+        addNotification({ title: 'Delete failed', message: extractApiError(error), type: 'error' });
       }
     }
   };
@@ -83,7 +84,7 @@ export default function CourseDetailPage() {
       await retryDocument.mutateAsync(document.id);
       addNotification({ title: 'Indexing retried', message: 'The document has been re-queued for indexing.', type: 'info' });
     } catch (error) {
-      addNotification({ title: 'Retry failed', message: 'Could not retry indexing.', type: 'error' });
+      addNotification({ title: 'Retry failed', message: extractApiError(error), type: 'error' });
     }
   };
   
@@ -92,7 +93,7 @@ export default function CourseDetailPage() {
       await generateCourse.mutateAsync(id);
       addNotification({ title: 'Generation Started', message: 'The course blueprint is being generated.', type: 'info' });
     } catch (error) {
-      addNotification({ title: 'Generation failed', message: 'Failed to start course generation.', type: 'error' });
+      addNotification({ title: 'Generation failed', message: extractApiError(error), type: 'error' });
     }
   };
   
@@ -103,7 +104,7 @@ export default function CourseDetailPage() {
       const res = await searchApi.mutateAsync({ query: searchQuery, courseId: id });
       setSearchResults(res.results);
     } catch (error) {
-      addNotification({ title: 'Search failed', message: 'Could not execute search.', type: 'error' });
+      addNotification({ title: 'Search failed', message: extractApiError(error), type: 'error' });
     }
   };
 

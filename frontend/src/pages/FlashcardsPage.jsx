@@ -4,6 +4,8 @@ import { useFlashcards, useReviewFlashcard } from '@/api/hooks';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Loading';
+import { useNotificationStore } from '@/store/useNotificationStore';
+import { extractApiError } from '@/utils/errorUtils';
 import { MarkdownViewer } from '@/components/ui/MarkdownViewer';
 import {
   RotateCw,
@@ -45,7 +47,12 @@ export default function FlashcardsPage() {
         setCurrentIndex(0);
       }
     } catch (err) {
-      console.error('Failed to submit review:', err);
+      const addNotification = useNotificationStore.getState().addNotification;
+      addNotification({
+        title: 'Review Submission Failed',
+        message: extractApiError(err),
+        type: 'error',
+      });
     }
   };
 
