@@ -170,11 +170,19 @@ pip install -r backend/requirements.txt
 ```
 
 ### 2. Environment Configuration
-Copy the template configuration to `backend/.env`:
+Copy the backend template to `backend/.env`:
 ```bash
-cp .env.example backend/.env
+cp backend/.env.example backend/.env
 ```
-Edit `backend/.env` to configure your PostgreSQL credentials, Redis host, `JWT_SECRET_KEY`, and `GROQ_API_KEY`.
+Open `backend/.env` and fill in every value marked `CHANGE_ME`:
+- `APP_SECRET_KEY` and `JWT_SECRET_KEY`: generate with `python -c "import secrets; print(secrets.token_hex(64))"`
+- `POSTGRES_PASSWORD` / `DATABASE_URL`: your PostgreSQL connection
+- `GROQ_API_KEY`: obtain from [console.groq.com](https://console.groq.com)
+
+> ⚠️ **Never commit `backend/.env` or any file with real credentials.** Only `backend/.env.example` belongs in version control.
+
+#### Production / Render Deployment
+Set all environment variables directly in the [Render Dashboard](https://dashboard.render.com) → **Environment** tab for your backend service. Do **not** use a `.env.production` file.
 
 ### 3. Database Migration
 ```bash
@@ -187,7 +195,9 @@ alembic upgrade head
 cd backend
 uvicorn main:app --reload --port 8001
 ```
-Visit Swagger API documentation at: `http://localhost:8001/api/docs`
+Visit Swagger API docs (local dev only): `http://localhost:8001/api/docs`
+
+> Swagger is automatically **disabled** in production (`ENABLE_DOCS=false`).
 
 ### 5. Start Celery Worker (New Terminal)
 ```bash
