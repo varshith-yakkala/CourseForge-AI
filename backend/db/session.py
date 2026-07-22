@@ -88,9 +88,9 @@ async def get_db() -> AsyncSession:  # type: ignore[return]
             await session.close()
 
 
-def get_db_session() -> async_sessionmaker[AsyncSession]:
+def get_db_session() -> AsyncSession:
     """
-    Return the session factory directly as a context manager.
+    Return a new database session context manager.
 
     Usage in Celery tasks:
         async with get_db_session() as session:

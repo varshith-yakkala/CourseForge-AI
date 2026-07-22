@@ -43,7 +43,7 @@ class CourseGeneratorService:
             raise CourseForgeError("Document not found or not ready")
 
         # 1. Retrieve chunks to form context
-        chunks = self.engine.adapter.retrieve_chunks(
+        chunks = self.engine.retrieve_chunks(
             query="Summarize the core concepts, outline, and main topics of this document to form a course syllabus.",
             doc_ids=[document.insightforge_doc_id],
             top_k=15

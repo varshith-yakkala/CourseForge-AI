@@ -43,12 +43,14 @@ async def search_documents(
         return {"results": []}
 
     try:
+        import asyncio
         engine = InsightForgeEngine()
-        # Retrieve chunks using the public engine API
-        chunks = engine.retrieve_chunks(
-            query=request.query,
-            doc_ids=valid_doc_ids,
-            top_k=request.top_k
+        # Retrieve chunks using the public engine API in a separate thread
+        chunks = await asyncio.to_thread(
+            engine.retrieve_chunks,
+            request.query,
+            valid_doc_ids,
+            request.top_k
         )
         
         return {

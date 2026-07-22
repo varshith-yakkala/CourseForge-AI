@@ -21,6 +21,7 @@ import logging
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
 
 from core.config import settings
 from core.exceptions import CourseForgeError
@@ -43,6 +44,18 @@ logger = logging.getLogger(__name__)
 # Application factory
 # ─────────────────────────────────────────────
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Application lifespan: verify all external dependencies are reachable.
+    InsightForge, PostgreSQL, Redis connections are validated here.
+    """
+    logger.info("CourseForge AI starting up...")
+    _ensure_runtime_directories()
+    logger.info("Startup complete. Application is ready.")
+    yield
+    logger.info("CourseForge AI shutting down.")
+
 def create_app() -> FastAPI:
     """
     Create and configure the FastAPI application.
@@ -51,6 +64,7 @@ def create_app() -> FastAPI:
         Fully configured FastAPI instance ready for Uvicorn.
     """
     app = FastAPI(
+        lifespan=lifespan,
         title=settings.APP_NAME,
         description=(
             "AI-powered PDF to Interactive Learning Platform. "
@@ -78,11 +92,6 @@ def create_app() -> FastAPI:
     # Exception Handlers
     # ─────────────────────────────────────────────
     _register_exception_handlers(app)
-
-    # ─────────────────────────────────────────────
-    # Lifecycle Events
-    # ─────────────────────────────────────────────
-    _register_lifecycle_events(app)
 
     # ─────────────────────────────────────────────
     # API Routers (added in Phase 2+)
@@ -138,22 +147,6 @@ def _register_exception_handlers(app: FastAPI) -> None:
         )
 
 
-def _register_lifecycle_events(app: FastAPI) -> None:
-    """Register application startup and shutdown event handlers."""
-
-    @app.on_event("startup")
-    async def on_startup() -> None:
-        """
-        Application startup: verify all external dependencies are reachable.
-        InsightForge, PostgreSQL, Redis connections are validated here.
-        """
-        logger.info("CourseForge AI starting up...")
-        _ensure_runtime_directories()
-        logger.info("Startup complete. Application is ready.")
-
-    @app.on_event("shutdown")
-    async def on_shutdown() -> None:
-        logger.info("CourseForge AI shutting down.")
 
 
 def _ensure_runtime_directories() -> None:

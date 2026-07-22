@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import Literal
 
-from pydantic import AnyUrl, field_validator, model_validator
+from pydantic import AnyUrl, field_validator, model_validator, Field, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     APP_ENV: Literal["development", "staging", "production"] = "development"
     APP_DEBUG: bool = True
     APP_PORT: int = 8001
-    APP_SECRET_KEY: str
+    APP_SECRET_KEY: str = Field(validation_alias=AliasChoices("app_secret_key", "secret_key"))
     API_V1_STR: str = "/api/v1"
 
     # ─────────────────────────────────────────────
@@ -69,7 +69,7 @@ class Settings(BaseSettings):
     # ─────────────────────────────────────────────
     # JWT AUTHENTICATION
     # ─────────────────────────────────────────────
-    JWT_SECRET_KEY: str
+    JWT_SECRET_KEY: str = Field(validation_alias=AliasChoices("jwt_secret_key", "jwt_secret"))
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
