@@ -26,19 +26,24 @@ logger = logging.getLogger(__name__)
 def register_middleware(app: FastAPI) -> None:
     """
     Register all middleware on the FastAPI application instance.
+
+    In Starlette, middlewares execute in REVERSE order of registration (last added runs outermost).
+    CORSMiddleware MUST be registered LAST so that it intercepts CORS preflight OPTIONS requests
+    before any custom BaseHTTPMiddleware or router route matching.
     """
-    _register_cors(app)
     app.add_middleware(_SecurityHeadersMiddleware)
     app.add_middleware(_RequestLoggingMiddleware)
+    _register_cors(app)
 
 
 def _register_cors(app: FastAPI) -> None:
-    """Configure CORS to allow the React frontend origin."""
+    """Configure CORS to allow local dev, production, and Vercel preview origins."""
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
+        allow_origin_regex=settings.CORS_ORIGIN_REGEX,
         allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
-        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_methods=["*"],
         allow_headers=["*"],
         expose_headers=["X-Request-ID", "X-Process-Time"],
     )

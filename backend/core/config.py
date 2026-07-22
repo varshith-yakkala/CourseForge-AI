@@ -105,7 +105,14 @@ class Settings(BaseSettings):
     # ─────────────────────────────────────────────
     # CORS
     # ─────────────────────────────────────────────
-    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+    CORS_ORIGINS: str = Field(
+        default="http://localhost:5173,http://localhost:3000,https://course-forge-ai.vercel.app",
+        validation_alias=AliasChoices("cors_origins"),
+    )
+    CORS_ORIGIN_REGEX: str = Field(
+        default=r"^https://course-forge(-[a-zA-Z0-9-]+)?\.vercel\.app$",
+        validation_alias=AliasChoices("cors_origin_regex"),
+    )
     CORS_ALLOW_CREDENTIALS: bool = True
 
     # ─────────────────────────────────────────────
@@ -198,8 +205,10 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> list[str]:
-        """Parse CORS_ORIGINS into a list."""
-        return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
+        """Parse CORS_ORIGINS into a list of clean origin strings."""
+        if not self.CORS_ORIGINS:
+            return []
+        return [origin.strip().rstrip("/") for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
     @property
     def insightforge_path(self) -> Path | None:
