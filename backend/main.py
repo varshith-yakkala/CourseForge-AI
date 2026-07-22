@@ -52,6 +52,16 @@ async def lifespan(app: FastAPI):
     """
     logger.info("CourseForge AI starting up...")
     _ensure_runtime_directories()
+
+    for route in app.routes:
+        methods = getattr(route, "methods", None)
+        methods_str = ", ".join(sorted(methods)) if methods else "ALL"
+        logger.info(
+            "Route registered: %s %s",
+            methods_str,
+            getattr(route, "path", str(route)),
+        )
+
     logger.info("Startup complete. Application is ready.")
     yield
     logger.info("CourseForge AI shutting down.")
@@ -72,9 +82,9 @@ def create_app() -> FastAPI:
             "quizzes, flashcards, and an AI tutor."
         ),
         version="1.0.0",
-        docs_url="/api/docs" if settings.is_development else None,
-        redoc_url="/api/redoc" if settings.is_development else None,
-        openapi_url="/api/openapi.json" if settings.is_development else None,
+        docs_url="/api/docs" if settings.ENABLE_DOCS else None,
+        redoc_url="/api/redoc" if settings.ENABLE_DOCS else None,
+        openapi_url="/api/openapi.json" if settings.ENABLE_DOCS else None,
         contact={
             "name": "CourseForge AI",
         },
@@ -82,6 +92,18 @@ def create_app() -> FastAPI:
             "name": "Private",
         },
     )
+
+    # ─────────────────────────────────────────────
+    # Root Endpoint
+    # ─────────────────────────────────────────────
+    @app.get("/", summary="Root Endpoint", tags=["Root"])
+    async def root():
+        return {
+            "service": "CourseForge AI",
+            "status": "running",
+            "docs": "/api/docs",
+            "health": "/api/v1/health",
+        }
 
     # ─────────────────────────────────────────────
     # Middleware

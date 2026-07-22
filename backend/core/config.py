@@ -39,7 +39,8 @@ class Settings(BaseSettings):
     APP_NAME: str = "CourseForge AI"
     APP_ENV: Literal["development", "staging", "production"] = "development"
     APP_DEBUG: bool = True
-    APP_PORT: int = 8001
+    APP_PORT: int = Field(default=8001, validation_alias=AliasChoices("port", "app_port"))
+    ENABLE_DOCS: bool = Field(default=True, validation_alias=AliasChoices("enable_docs"))
     APP_SECRET_KEY: str = Field(validation_alias=AliasChoices("app_secret_key", "secret_key"))
     API_V1_STR: str = "/api/v1"
 
