@@ -105,20 +105,26 @@ class InsightForgeEngine:
     Adapter wrapping InsightForge-AI internals for use by CourseForge services.
 
     This class is a SINGLETON — one instance is created at app startup
-    and shared across all services via FastAPI dependency injection.
-
-    All methods are synchronous because InsightForge itself is synchronous.
-    Async wrappers are handled at the FastAPI route layer via run_in_executor.
-
-    Raises:
-        InsightForgeError: If InsightForge cannot be imported or initialized.
+    and shared across all services.
     """
 
+    _instance: InsightForgeEngine | None = None
+
+    def __new__(cls) -> InsightForgeEngine:
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+
     def __init__(self) -> None:
+        if getattr(self, "_initialized", False):
+            return
         from insightforge.adapter import InsightForgeAdapter
 
         self._adapter = InsightForgeAdapter()
-        logger.info("InsightForgeEngine initialized successfully.")
+        self._initialized = True
+        logger.info("InsightForgeEngine singleton initialized successfully.")
+
 
     # ─────────────────────────────────────────────
     # Public API — called by CourseForge services

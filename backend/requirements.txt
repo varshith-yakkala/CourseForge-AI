@@ -36,13 +36,8 @@ bcrypt==4.2.0                     # Explicitly included for passlib compatibilit
 passlib[bcrypt]==1.7.4            # Password hashing
 
 # ─────────────────────────────────────────────
-# Background Tasks
-# ─────────────────────────────────────────────
-celery==5.4.0
-redis==5.0.8                   # Redis client (broker + cache)
-
-# ─────────────────────────────────────────────
 # HTTP Client (for future integrations)
+
 # ─────────────────────────────────────────────
 httpx==0.27.2
 

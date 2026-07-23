@@ -60,22 +60,9 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = "courseforge_pass"
 
     # ─────────────────────────────────────────────
-    # REDIS
-    # ─────────────────────────────────────────────
-    REDIS_HOST: str = "localhost"
-    REDIS_PORT: int = 6379
-    REDIS_PASSWORD: str = ""
-    REDIS_DB: int = 0
-
-    # ─────────────────────────────────────────────
-    # CELERY
-    # ─────────────────────────────────────────────
-    CELERY_TASK_TIMEOUT_SECONDS: int = Field(default=600, gt=0)
-    CELERY_MAX_RETRIES: int = Field(default=3, ge=0)
-
-    # ─────────────────────────────────────────────
     # JWT AUTHENTICATION
     # ─────────────────────────────────────────────
+
     JWT_SECRET_KEY: str = Field(validation_alias=AliasChoices("jwt_secret_key", "jwt_secret"))
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
@@ -206,21 +193,6 @@ class Settings(BaseSettings):
         )
 
     @property
-    def redis_url(self) -> str:
-        """Redis connection URL constructed from individual parts."""
-        if self.REDIS_PASSWORD:
-            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
-        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
-
-    @property
-    def celery_broker_url(self) -> str:
-        return self.redis_url
-
-    @property
-    def celery_result_backend(self) -> str:
-        return self.redis_url
-
-    @property
     def allowed_extensions(self) -> list[str]:
         """Parse ALLOWED_UPLOAD_EXTENSIONS into a list."""
         return [ext.strip() for ext in self.ALLOWED_UPLOAD_EXTENSIONS.split(",")]
@@ -279,7 +251,7 @@ class Settings(BaseSettings):
             raise ValueError(f"{info.field_name} must be at least 32 characters long.")
         return v
 
-    @field_validator("POSTGRES_PASSWORD", "REDIS_PASSWORD")
+    @field_validator("POSTGRES_PASSWORD")
     @classmethod
     def validate_password_not_placeholder(cls, v: str, info: Any) -> str:
         if v and cls._is_weak_secret(v):
@@ -301,11 +273,6 @@ class Settings(BaseSettings):
                 for forbidden in forbidden_cors:
                     if forbidden in origin:
                         raise ValueError(f"CORS origin '{origin}' is not allowed in production.")
-        
-        # Redis & Celery consistency
-        if self.CELERY_TASK_TIMEOUT_SECONDS > 0:
-            if not self.REDIS_HOST:
-                raise ValueError("Celery requires REDIS_HOST to be configured as a broker.")
             
         return self
 
@@ -341,13 +308,12 @@ class Settings(BaseSettings):
             "Configuration Loaded": "Successfully",
             "Debug Mode": str(self.APP_DEBUG),
             "Database": "Configured",
-            "Redis": "Configured" if self.REDIS_HOST else "Disabled",
-            "Celery": "Configured",
             "Docs": "Enabled" if self.ENABLE_DOCS else "Disabled",
             "Rate Limiting": "Enabled",
             "Storage": "Configured",
             "LLM": "Configured"
         }
+
 
 
     @model_validator(mode="after")

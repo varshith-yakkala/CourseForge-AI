@@ -2,7 +2,7 @@
 CourseForge AI — Health, Readiness & Monitoring Endpoints
 
 GET /api/v1/health  — Liveness check
-GET /api/v1/ready   — Readiness check (DB, Redis, InsightForge, Celery)
+GET /api/v1/ready   — Readiness check (DB, InsightForge)
 GET /api/v1/metrics — Performance metrics (Uptime, Memory usage, System load)
 """
 
@@ -14,7 +14,7 @@ import time
 import psutil
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,7 +44,8 @@ class HealthResponse(BaseModel):
 class ReadinessResponse(BaseModel):
     status: str
     database: str
-    redis: str
+    embedding_model: str
+    groq_available: bool
     insightforge: str
     ready: bool
 
@@ -70,7 +71,10 @@ async def health_check() -> HealthResponse:
 
 
 @router.get("/ready", response_model=ReadinessResponse, summary="Readiness check")
-async def readiness_check(db: AsyncSession = Depends(get_db)) -> ReadinessResponse:
+async def readiness_check(
+    response: Response,
+    db: AsyncSession = Depends(get_db)
+) -> ReadinessResponse:
     """
     Readiness check verifying database and service connections.
     """
@@ -82,7 +86,10 @@ async def readiness_check(db: AsyncSession = Depends(get_db)) -> ReadinessRespon
     except Exception as exc:
         logger.error(f"Readiness check DB error: {exc}")
 
+    groq_ok = bool(settings.GROQ_API_KEY and settings.GROQ_API_KEY != "CHANGE_ME_your_groq_api_key")
+    embedding_status = "healthy"
     insightforge_status = "degraded"
+
     try:
         from insightforge.engine import InsightForgeEngine
         engine = InsightForgeEngine()
@@ -91,17 +98,21 @@ async def readiness_check(db: AsyncSession = Depends(get_db)) -> ReadinessRespon
     except Exception:
         pass
 
-    redis_status = "healthy" # Assume healthy unless connection fails
+    is_ready = db_status == "healthy" and groq_ok
 
-    is_ready = db_status == "healthy"
+    if not is_ready:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
     return ReadinessResponse(
         status="healthy" if is_ready else "unhealthy",
         database=db_status,
-        redis=redis_status,
+        embedding_model=embedding_status,
+        groq_available=groq_ok,
         insightforge=insightforge_status,
         ready=is_ready,
     )
+
+
 
 
 @router.get("/metrics", response_model=MetricsResponse, summary="Metrics endpoint")

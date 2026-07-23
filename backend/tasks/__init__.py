@@ -1,1 +1,1 @@
-"""tasks package — Celery background job definitions."""
+"""tasks package — background service definitions."""

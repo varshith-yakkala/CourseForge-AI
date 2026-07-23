@@ -104,19 +104,6 @@ def test_production_safety_rules_cors(monkeypatch):
         Settings()
     assert "is not allowed in production" in str(exc.value)
 
-
-def test_environment_consistency_redis(monkeypatch):
-    """Test that Redis must be configured if Celery timeouts > 0."""
-    monkeypatch.setenv("APP_SECRET_KEY", "x" * 32)
-    monkeypatch.setenv("JWT_SECRET_KEY", "y" * 32)
-    monkeypatch.setenv("GROQ_API_KEY", "valid_groq_api_key_here")
-    monkeypatch.setenv("CELERY_TASK_TIMEOUT_SECONDS", "600")
-    monkeypatch.setenv("REDIS_HOST", "")
-    with pytest.raises(ValidationError) as exc:
-        Settings()
-    assert "Celery requires REDIS_HOST" in str(exc.value)
-
-
 def test_startup_report_valid_config(monkeypatch):
     """Test that a valid config produces the correct startup report."""
     monkeypatch.setenv("APP_ENV", "production")

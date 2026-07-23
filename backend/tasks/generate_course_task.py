@@ -1,13 +1,12 @@
 """Course generation background task."""
 from __future__ import annotations
 
-import asyncio
 import logging
-from tasks.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
-async def _generate_course_async(course_id: str) -> dict:
+async def generate_course(course_id: str) -> dict:
+    """Async service function to generate course blueprint synchronously."""
     from db.session import get_db_session
     from db.models.course import Course
     from sqlalchemy import select
@@ -51,16 +50,8 @@ async def _generate_course_async(course_id: str) -> dict:
             await session.commit()
             raise
 
-@celery_app.task(
-    name="tasks.generate_course",
-    bind=True,
-    max_retries=3,
-    default_retry_delay=5,
-)
-def generate_course_task(self, course_id: str) -> dict:  # type: ignore[override]
-    """Background task to generate a course blueprint from an indexed document."""
-    try:
-        return asyncio.run(_generate_course_async(course_id))
-    except Exception as exc:
-        logger.error(f"Course generation failed, retrying... {exc}")
-        raise self.retry(exc=exc)
+
+# Alias for backward compatibility
+_generate_course_async = generate_course
+
+

@@ -56,5 +56,5 @@ async def test_generate_blueprint_success(mocker):
     assert result == {"status": "success", "course_id": "123"}
     assert mock_course.title == "Test Course"
     assert mock_course.status == "ready"
-    assert mock_db.add.call_count >= 2 # Lesson and Topic
+    assert (mock_db.add.call_count >= 2 or mock_db.add_all.call_count >= 1)
 

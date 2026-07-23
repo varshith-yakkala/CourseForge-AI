@@ -93,8 +93,9 @@ def get_db_session() -> AsyncSession:
     """
     Return a new database session context manager.
 
-    Usage in Celery tasks:
+    Usage in async background services:
         async with get_db_session() as session:
             ...
+
     """
     return AsyncSessionLocal()

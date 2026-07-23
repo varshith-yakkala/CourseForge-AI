@@ -18,17 +18,6 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: courseforge-redis
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: ./backend
@@ -37,34 +26,13 @@ services:
     environment:
       APP_ENV: production
       DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@postgres:5432/courseforge
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
-      JWT_SECRET: production_super_secret_jwt_key_change_me_in_prod_12345
+      JWT_SECRET_KEY: production_super_secret_jwt_key_change_me_in_prod_12345
+      APP_SECRET_KEY: production_super_secret_app_key_change_me_in_prod_12345
     ports:
-      - "8000:8000"
+      - "8001:8001"
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  celery_worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: courseforge-celery-worker
-    command: celery -A tasks.celery_app worker --loglevel=info
-    environment:
-      APP_ENV: production
-      DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@postgres:5432/courseforge
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
-      JWT_SECRET: production_super_secret_jwt_key_change_me_in_prod_12345
-    depends_on:
-      backend:
-        condition: service_started
 
   frontend:
     build:
@@ -78,3 +46,4 @@ services:
 
 volumes:
   postgres_data:
+

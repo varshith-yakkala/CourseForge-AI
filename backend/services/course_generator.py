@@ -42,6 +42,12 @@ class CourseGeneratorService:
         if not document or document.index_status != "ready":
             raise CourseForgeError("Document not found or not ready")
 
+        from core.progress import ProgressTracker
+        import time
+
+        t_llm_start = time.perf_counter()
+        ProgressTracker.set_stage(course_id, "generating_course_blueprint", 70, "Generating course blueprint via Groq LLM")
+
         # 1. Retrieve chunks to form context
         chunks = self.engine.retrieve_chunks(
             query="Summarize the core concepts, outline, and main topics of this document to form a course syllabus.",
@@ -66,6 +72,9 @@ class CourseGeneratorService:
             prompt_override=prompt
         )
         
+        t_llm = round((time.perf_counter() - t_llm_start) * 1000, 2)
+        ProgressTracker.record_timing(course_id, "llm_generation_ms", t_llm)
+
         answer = query_result.answer
         if not answer:
             raise CourseForgeError("LLM failed to generate a response.")
@@ -85,52 +94,65 @@ class CourseGeneratorService:
             raise CourseForgeError(f"Blueprint parsing failed: {e}")
 
         # 4. Save to DB
+        ProgressTracker.set_stage(course_id, "saving_course", 90, "Saving course syllabus and lessons to database")
+        t_db_start = time.perf_counter()
         course.title = blueprint.title
         course.description = blueprint.description
         course.difficulty = blueprint.difficulty
         course.estimated_duration_min = blueprint.estimated_duration_min
         course.tags = blueprint.tags
         course.status = "ready"
+
         
         # Delete existing lessons if this is a regeneration
+        import uuid
         from sqlalchemy import delete
         await self.db.execute(delete(Lesson).where(Lesson.course_id == course.id))
-        await self.db.flush()
         
+        objects_to_add = []
         for l_idx, l_data in enumerate(blueprint.lessons):
+            lesson_id = uuid.uuid4()
             lesson = Lesson(
+                id=lesson_id,
                 course_id=course.id,
                 title=l_data.title,
                 summary=l_data.summary,
                 order_index=l_idx,
                 estimated_duration_min=l_data.estimated_duration_min,
-                status="pending" # Will be generated in Layer 2 (Phase 7)
+                status="pending"
             )
-            self.db.add(lesson)
-            await self.db.flush() # get lesson ID
+            objects_to_add.append(lesson)
             
             for t_idx, t_data in enumerate(l_data.topics):
+                topic_id = uuid.uuid4()
                 topic = Topic(
-                    lesson_id=lesson.id,
+                    id=topic_id,
+                    lesson_id=lesson_id,
                     course_id=course.id,
                     title=t_data.title,
-                    content=t_data.description, # Temporary summary
+                    content=t_data.description,
                     order_index=t_idx,
                     key_terms=t_data.key_terms
                 )
-                self.db.add(topic)
-                await self.db.flush()
+                objects_to_add.append(topic)
                 
                 for st_idx, st_data in enumerate(t_data.subtopics):
                     subtopic = Subtopic(
-                        topic_id=topic.id,
-                        lesson_id=lesson.id,
+                        id=uuid.uuid4(),
+                        topic_id=topic_id,
+                        lesson_id=lesson_id,
                         course_id=course.id,
                         title=st_data.title,
-                        content=st_data.description, # Temporary summary
+                        content=st_data.description,
                         order_index=st_idx
                     )
-                    self.db.add(subtopic)
-                    
+                    objects_to_add.append(subtopic)
+        self.db.add_all(objects_to_add)
         await self.db.commit()
+
+        t_db = round((time.perf_counter() - t_db_start) * 1000, 2)
+        ProgressTracker.record_timing(course_id, "db_write_ms", t_db)
+        ProgressTracker.set_stage(course_id, "completed", 100, "Course generated successfully")
         return {"status": "success", "course_id": course_id}
+
+

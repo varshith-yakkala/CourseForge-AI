@@ -1,6 +1,11 @@
+import os
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi import Request, Response
+
+os.environ["APP_SECRET_KEY"] = "x" * 32
+os.environ["JWT_SECRET_KEY"] = "y" * 32
+os.environ["GROQ_API_KEY"] = "valid_groq_api_key_here"
 
 @pytest.mark.asyncio
 async def test_upload_document(mocker):
@@ -24,7 +29,8 @@ async def test_upload_document(mocker):
     
     mock_db.execute.side_effect = [mock_result_course, mock_result_doc]
     
-    with patch("builtins.open", mocker.mock_open()), patch("os.makedirs"), patch("tasks.document_tasks.process_document_task.delay"):
+    with patch("builtins.open", mocker.mock_open()), patch("os.makedirs"), patch("tasks.document_tasks.process_document", AsyncMock()):
+
         req = Request({"type": "http", "method": "POST", "path": "/test", "headers": []})
         req.state.view_rate_limit = None
         res = Response()

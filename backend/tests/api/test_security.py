@@ -1,6 +1,11 @@
+import os
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch, MagicMock
+
+os.environ["APP_SECRET_KEY"] = "x" * 32
+os.environ["JWT_SECRET_KEY"] = "y" * 32
+os.environ["GROQ_API_KEY"] = "valid_groq_api_key_here"
 
 from main import app
 from api.deps import get_db, get_current_user, get_current_active_user
@@ -122,7 +127,7 @@ def test_upload_file_size_validation():
             files={"file": ("large.pdf", large_data, "application/pdf")}
         )
         assert response.status_code == 413
-        assert "File too large" in response.json()["detail"]
+        assert "File exceeds the maximum allowed size" in response.json()["detail"]
     finally:
         app.dependency_overrides[get_db] = override_get_db
 

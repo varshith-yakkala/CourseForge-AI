@@ -163,10 +163,45 @@ async def start_course_generation(
     await db.commit()
     await db.refresh(course)
     
-    from tasks.generate_course_task import generate_course_task
-    generate_course_task.delay(str(course.id))
+    from core.progress import ProgressTracker
+    import time
+    t_start = time.perf_counter()
+
+    from tasks.generate_course_task import generate_course
+    await generate_course(str(course.id))
+    await db.refresh(course)
+
+    t_total = round((time.perf_counter() - t_start) * 1000, 2)
+    ProgressTracker.record_timing(str(course.id), "total_generation_ms", t_total)
+    response.headers["X-Processing-Time-ms"] = str(t_total)
     
     return course
+
+
+@router.get("/{course_id}/progress")
+async def get_course_progress(
+    course_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """Get real-time course blueprint generation stage progress."""
+    from core.progress import ProgressTracker
+    stmt = select(Course).where(
+        Course.id == course_id,
+        Course.owner_id == current_user.id,
+        Course.deleted_at.is_(None)
+    )
+    result = await db.execute(stmt)
+    course = result.scalar_one_or_none()
+
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    progress = ProgressTracker.get_progress(str(course_id))
+    progress["status"] = course.status
+    return progress
+
+
 
 @router.get("/{course_id}/structure")
 async def get_course_structure(

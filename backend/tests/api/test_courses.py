@@ -1,5 +1,10 @@
+import os
 import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+os.environ["APP_SECRET_KEY"] = "x" * 32
+os.environ["JWT_SECRET_KEY"] = "y" * 32
+os.environ["GROQ_API_KEY"] = "valid_groq_api_key_here"
 
 @pytest.mark.asyncio
 async def test_list_courses(mocker):
@@ -14,7 +19,7 @@ async def test_list_courses(mocker):
     mock_result.scalars.return_value.all.return_value = []
     mock_db.execute.return_value = mock_result
     
-    result = await list_courses(db=mock_db, current_user=mock_user)
+    result = await list_courses(db=mock_db, current_user=mock_user, skip=0, limit=20)
     assert result == []
 
 @pytest.mark.asyncio

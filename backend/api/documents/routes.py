@@ -134,9 +134,19 @@ async def upload_document(
     await db.commit()
     await db.refresh(doc)
 
-    # ── Trigger background indexing ───────────────────────────────────────────
-    from tasks.document_tasks import process_document_task
-    process_document_task.delay(str(doc.id))
+    # ── Execute document indexing synchronously ──────────────────────────────
+    from core.progress import ProgressTracker
+    import time
+    t_start = time.perf_counter()
+    ProgressTracker.set_stage(str(doc.id), "uploading_pdf", 15, "PDF file validated and stored")
+
+    from tasks.document_tasks import process_document
+    await process_document(str(doc.id))
+    await db.refresh(doc)
+
+    t_total = round((time.perf_counter() - t_start) * 1000, 2)
+    ProgressTracker.record_timing(str(doc.id), "total_processing_ms", t_total)
+    response.headers["X-Processing-Time-ms"] = str(t_total)
 
     return doc
 
@@ -160,6 +170,30 @@ async def get_document_by_course(
 
     return doc
 
+
+@router.get("/{document_id}/progress")
+async def get_document_progress(
+    document_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """Get real-time document indexing stage progress and execution metrics."""
+    from core.progress import ProgressTracker
+    stmt = select(Document).where(
+        Document.id == document_id,
+        Document.owner_id == current_user.id
+    )
+    result = await db.execute(stmt)
+    doc = result.scalar_one_or_none()
+
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    progress = ProgressTracker.get_progress(str(document_id))
+    progress["index_status"] = doc.index_status
+    return progress
+
+
 @router.get("/{document_id}", response_model=DocumentResponse)
 async def get_document(
     document_id: uuid.UUID,
@@ -178,6 +212,7 @@ async def get_document(
         raise HTTPException(status_code=404, detail="Document not found")
 
     return doc
+
 
 @router.post("/{document_id}/retry", response_model=DocumentResponse)
 async def retry_document_indexing(
@@ -204,9 +239,12 @@ async def retry_document_indexing(
     await db.commit()
     await db.refresh(doc)
 
-    from tasks.document_tasks import process_document_task
-    process_document_task.delay(str(doc.id))
+    from tasks.document_tasks import process_document
+    await process_document(str(doc.id))
+    await db.refresh(doc)
 
     return doc
+
+
 
 

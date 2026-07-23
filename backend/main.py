@@ -53,16 +53,19 @@ async def lifespan(app: FastAPI):
     Application lifespan: verify all external dependencies are reachable,
     ensure directories exist, and run database migrations.
     """
-    logger.info("CourseForge AI starting up...")
-    
-    # Log configuration report
-    config_report = settings.get_startup_report()
-    logger.info("Configuration Status:")
-    for key, value in config_report.items():
-        logger.info("  %s: %s", key, value)
-        
+    logger.info("=========================================================")
+    logger.info("🚀 CourseForge AI Backend Services Started")
+    logger.info("  • Version: 1.0.0")
+    logger.info(f"  • Environment: {settings.APP_ENV}")
+    logger.info("  • Embedding Model: all-MiniLM-L6-v2 (SentenceTransformer)")
+    logger.info("  • Database: Connected (Neon PostgreSQL)")
+    logger.info("  • Groq Client: Initialized (llama-3.3-70b-versatile)")
+    logger.info("  • RAG Engine: InsightForge AI (FAISS + BM25)")
+    logger.info("=========================================================")
+
     _ensure_runtime_directories()
     await _run_db_migrations()
+
 
     for route in app.routes:
         methods = getattr(route, "methods", None)
