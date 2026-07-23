@@ -1,7 +1,7 @@
 """Fix Text timestamps to DateTime
 
 Revision ID: 002
-Revises: 001
+Revises: 001_initial_schema
 Create Date: 2026-07-22 17:43:00.000000
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '002'
-down_revision: Union[str, None] = '001'
+down_revision: Union[str, None] = '001_initial_schema'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
