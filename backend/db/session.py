@@ -42,11 +42,12 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────
 engine: AsyncEngine = create_async_engine(
     settings.database_url,
-    echo=settings.APP_DEBUG,           # Log all SQL in debug mode
-    pool_size=10,                       # Connections kept open in pool
-    max_overflow=20,                    # Extra connections allowed above pool_size
+    echo=settings.APP_DEBUG,            # Log all SQL in debug mode
+    pool_size=3,                        # Connections kept open in pool (lower for Render/Neon scaling)
+    max_overflow=5,                     # Extra connections allowed above pool_size
+    pool_timeout=30,                    # Seconds to wait before giving up on getting a connection
     pool_pre_ping=True,                 # Validate connection before use (avoids stale connections)
-    pool_recycle=3600,                  # Recycle connections after 1 hour
+    pool_recycle=1800,                  # Recycle connections after 30 minutes
 )
 
 # ─────────────────────────────────────────────

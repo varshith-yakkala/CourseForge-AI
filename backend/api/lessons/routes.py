@@ -4,11 +4,12 @@ CourseForge AI — Lesson & Progress API Routes
 import uuid
 from datetime import datetime, timezone
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from api.deps import get_current_active_user, get_db
+from core.rate_limit import limiter, _get_user_or_ip
 from api.lessons.schemas import (
     LessonDetailResponse,
     UpdateProgressRequest,
@@ -51,6 +52,7 @@ async def get_lesson_detail(
         try:
             lesson = await service.generate_lesson(str(course_id), str(lesson_id), force_regenerate=False)
         except Exception as exc:
+            await db.rollback()
             # If generation fails, return the lesson object with status="failed"
             stmt_refreshed = select(Lesson).where(Lesson.id == lesson_id)
             res_refreshed = await db.execute(stmt_refreshed)
@@ -88,7 +90,10 @@ async def get_lesson_detail(
 
 
 @router.post("/courses/{course_id}/lessons/{lesson_id}/generate", response_model=LessonDetailResponse)
+@limiter.limit("30/hour", key_func=_get_user_or_ip)
 async def generate_lesson(
+    request: Request,
+    response: Response,
     course_id: uuid.UUID,
     lesson_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -101,7 +106,10 @@ async def generate_lesson(
 
 
 @router.post("/courses/{course_id}/lessons/{lesson_id}/regenerate", response_model=LessonDetailResponse)
+@limiter.limit("30/hour", key_func=_get_user_or_ip)
 async def regenerate_lesson(
+    request: Request,
+    response: Response,
     course_id: uuid.UUID,
     lesson_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -206,7 +214,10 @@ async def get_course_progress(
 
 
 @router.post("/courses/{course_id}/lessons/{lesson_id}/ask", response_model=AskTutorResponse)
+@limiter.limit("60/hour", key_func=_get_user_or_ip)
 async def ask_lesson_tutor(
+    request: Request,
+    response: Response,
     course_id: uuid.UUID,
     lesson_id: uuid.UUID,
     req: AskTutorRequest,

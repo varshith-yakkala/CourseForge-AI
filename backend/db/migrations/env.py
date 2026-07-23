@@ -43,7 +43,7 @@ import db.models  # noqa: F401
 config = context.config
 
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # Override the database URL from Pydantic Settings (not alembic.ini)
 config.set_main_option("sqlalchemy.url", settings.database_url)
@@ -91,7 +91,14 @@ async def run_async_migrations() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode against a live database."""
-    asyncio.run(run_async_migrations())
+    connectable = config.attributes.get("connection", None)
+    
+    if connectable is None:
+        # CLI usage (alembic upgrade head)
+        asyncio.run(run_async_migrations())
+    else:
+        # Programmatic usage (from FastAPI lifespan)
+        do_run_migrations(connectable)
 
 
 if context.is_offline_mode():

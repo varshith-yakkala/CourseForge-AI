@@ -22,6 +22,7 @@ const getApiBaseUrl = () => {
 // Base API configuration
 export const apiClient = axios.create({
   baseURL: getApiBaseUrl(),
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -39,7 +40,7 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle 401s (logout) safely
+// Response interceptor to handle 401s (logout) safely and normalize errors
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -50,6 +51,28 @@ apiClient.interceptors.response.use(
         window.location.href = '/login';
       }
     }
+    
+    // Normalize errors
+    let errorMessage = 'An unexpected error occurred. Please try again.';
+    
+    if (error.response) {
+      // Server responded with an error
+      if (error.response.data && error.response.data.detail) {
+        if (typeof error.response.data.detail === 'string') {
+          errorMessage = error.response.data.detail;
+        }
+      } else if (error.response.data && error.response.data.errors && error.response.data.errors.length > 0) {
+        errorMessage = error.response.data.errors[0].msg || 'Validation error';
+      }
+    } else if (error.request) {
+      // Network error or timeout
+      errorMessage = 'Unable to reach the server. Please check your connection or try again later.';
+    } else {
+      errorMessage = error.message;
+    }
+    
+    error.normalizedMessage = errorMessage;
+    
     return Promise.reject(error);
   }
 );

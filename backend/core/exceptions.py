@@ -76,6 +76,11 @@ class InvalidCredentialsError(CourseForgeError):
     status_code = 401
     code = "INVALID_CREDENTIALS"
 
+class UnauthorizedError(CourseForgeError):
+    """Raised for general authentication failures."""
+    status_code = 401
+    code = "UNAUTHORIZED"
+
 
 class TokenExpiredError(CourseForgeError):
     """Raised when a JWT token has expired."""

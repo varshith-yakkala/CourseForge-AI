@@ -1,67 +1,125 @@
 """Document upload and management routes."""
+import logging
 import os
 import uuid
-import shutil
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from api.deps import get_current_active_user, get_db
 from api.documents.schemas import DocumentResponse
+from core.config import settings
+from core.rate_limit import limiter, _get_user_or_ip
 from db.models.document import Document
 from db.models.course import Course
 from db.models.user import User
 from datetime import datetime, timezone
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
-UPLOAD_DIR = "uploads"
+# PDF magic bytes: all valid PDFs begin with %PDF-
+_PDF_MAGIC = b"%PDF-"
+# Chunk size for streaming upload (64 KB — small enough to keep memory low)
+_CHUNK_SIZE = 64 * 1024
 
 
 @router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/hour", key_func=_get_user_or_ip)
 async def upload_document(
+    request: Request,
+    response: Response,
     course_id: uuid.UUID = Form(...),
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
-    """Upload a PDF document and link it to a course."""
+    """Upload a PDF document and link it to a course.
+
+    Security hardening (Phase 1):
+      - Rate limited: 10 uploads/hour per authenticated user
+      - MIME type validated (Content-Type header)
+      - File size limit enforced by streaming (MAX_UPLOAD_SIZE_MB config)
+      - PDF magic bytes validated (%PDF-) after first chunk write
+      - Partial files deleted on any validation failure
+    """
+    # ── MIME type check (client-provided, quick first gate) ──────────────────
     if file.content_type != "application/pdf":
-        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
-        
-    # Verify course exists and belongs to user
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Only PDF files are supported. Please upload a .pdf file.",
+        )
+
+    # ── Verify course ownership ───────────────────────────────────────────────
     stmt = select(Course).where(
-        Course.id == course_id, 
+        Course.id == course_id,
         Course.owner_id == current_user.id,
         Course.deleted_at.is_(None)
     )
     result = await db.execute(stmt)
     course = result.scalar_one_or_none()
-    
+
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
-        
-    # Check if course already has a document
+
+    # ── Prevent duplicate uploads ─────────────────────────────────────────────
     stmt_doc = select(Document).where(Document.course_id == course_id)
     result_doc = await db.execute(stmt_doc)
     if result_doc.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Course already has an uploaded document")
 
-    # Mock storage
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    # ── Prepare storage ───────────────────────────────────────────────────────
+    upload_dir = str(settings.upload_dir_path)
+    os.makedirs(upload_dir, exist_ok=True)
     file_id = uuid.uuid4()
-    stored_path = os.path.join(UPLOAD_DIR, f"{file_id}.pdf")
-    
+    stored_path = os.path.join(upload_dir, f"{file_id}.pdf")
+
+    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
     file_size_bytes = 0
-    with open(stored_path, "wb") as buffer:
-        while True:
-            chunk = await file.read(1024 * 1024)  # 1MB chunks
-            if not chunk:
-                break
-            buffer.write(chunk)
-            file_size_bytes += len(chunk)
-            
+    magic_verified = False
+
+    try:
+        with open(stored_path, "wb") as buffer:
+            while True:
+                chunk = await file.read(_CHUNK_SIZE)
+                if not chunk:
+                    break
+
+                # ── Size enforcement (streaming) ──────────────────────────────
+                file_size_bytes += len(chunk)
+                if file_size_bytes > max_bytes:
+                    raise HTTPException(
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        detail=(
+                            f"File exceeds the maximum allowed size of "
+                            f"{settings.MAX_UPLOAD_SIZE_MB} MB."
+                        ),
+                    )
+
+                buffer.write(chunk)
+
+                # ── Magic-byte validation (first chunk only) ──────────────────
+                if not magic_verified:
+                    if not chunk[:5] == _PDF_MAGIC:
+                        raise HTTPException(
+                            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                            detail=(
+                                "The uploaded file does not appear to be a valid PDF. "
+                                "Please upload a genuine PDF document."
+                            ),
+                        )
+                    magic_verified = True
+
+    except HTTPException:
+        # Clean up partial file on any validation failure
+        if os.path.exists(stored_path):
+            os.remove(stored_path)
+            logger.info("Deleted partial upload after validation failure: %s", stored_path)
+        raise
+
+    # ── Persist document record ───────────────────────────────────────────────
     doc = Document(
         course_id=course_id,
         owner_id=current_user.id,
@@ -75,11 +133,11 @@ async def upload_document(
     db.add(doc)
     await db.commit()
     await db.refresh(doc)
-    
-    # Trigger background indexing
+
+    # ── Trigger background indexing ───────────────────────────────────────────
     from tasks.document_tasks import process_document_task
     process_document_task.delay(str(doc.id))
-    
+
     return doc
 
 
@@ -96,10 +154,10 @@ async def get_document_by_course(
     )
     result = await db.execute(stmt)
     doc = result.scalar_one_or_none()
-    
+
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-        
+
     return doc
 
 @router.get("/{document_id}", response_model=DocumentResponse)
@@ -115,10 +173,10 @@ async def get_document(
     )
     result = await db.execute(stmt)
     doc = result.scalar_one_or_none()
-    
+
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-        
+
     return doc
 
 @router.post("/{document_id}/retry", response_model=DocumentResponse)
@@ -134,19 +192,21 @@ async def retry_document_indexing(
     )
     result = await db.execute(stmt)
     doc = result.scalar_one_or_none()
-    
+
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-        
+
     if doc.index_status == "ready":
         raise HTTPException(status_code=400, detail="Document is already indexed successfully")
-        
+
     doc.index_status = "pending"
     db.add(doc)
     await db.commit()
     await db.refresh(doc)
-    
+
     from tasks.document_tasks import process_document_task
     process_document_task.delay(str(doc.id))
-    
+
     return doc
+
+

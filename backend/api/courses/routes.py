@@ -1,12 +1,13 @@
 """Course routes."""
 import uuid
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from api.deps import get_current_active_user, get_db
 from api.courses.schemas import CourseCreate, CourseUpdate, CourseResponse
+from core.rate_limit import limiter, _get_user_or_ip
 from db.models.course import Course
 from db.models.lesson import Lesson
 from db.models.topic import Topic
@@ -20,12 +21,14 @@ router = APIRouter(prefix="/courses", tags=["Courses"])
 async def list_courses(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
 ) -> Any:
     """Retrieve all courses owned by the current user."""
     stmt = select(Course).where(
         Course.owner_id == current_user.id,
         Course.deleted_at.is_(None)
-    ).order_by(Course.created_at.desc())
+    ).order_by(Course.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
     courses = result.scalars().all()
     return courses
@@ -131,7 +134,10 @@ async def delete_course(
 
 
 @router.post("/{course_id}/generate", response_model=CourseResponse)
+@limiter.limit("10/hour", key_func=_get_user_or_ip)
 async def start_course_generation(
+    request: Request,
+    response: Response,
     course_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),

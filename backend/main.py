@@ -21,12 +21,15 @@ import logging
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from contextlib import asynccontextmanager
+from slowapi.errors import RateLimitExceeded
 
 from core.config import settings
 from core.exceptions import CourseForgeError
 from core.logging_config import configure_logging
 from core.middleware import register_middleware
+from core.rate_limit import limiter
 
 # ─────────────────────────────────────────────
 # Configure logging FIRST — before any other module logs
@@ -47,11 +50,19 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Application lifespan: verify all external dependencies are reachable.
-    InsightForge, PostgreSQL, Redis connections are validated here.
+    Application lifespan: verify all external dependencies are reachable,
+    ensure directories exist, and run database migrations.
     """
     logger.info("CourseForge AI starting up...")
+    
+    # Log configuration report
+    config_report = settings.get_startup_report()
+    logger.info("Configuration Status:")
+    for key, value in config_report.items():
+        logger.info("  %s: %s", key, value)
+        
     _ensure_runtime_directories()
+    await _run_db_migrations()
 
     for route in app.routes:
         methods = getattr(route, "methods", None)
@@ -62,9 +73,42 @@ async def lifespan(app: FastAPI):
             getattr(route, "path", str(route)),
         )
 
-    logger.info("Startup complete. Application is ready.")
     yield
-    logger.info("CourseForge AI shutting down.")
+    logger.info("CourseForge AI shutting down...")
+
+
+async def _run_db_migrations() -> None:
+    """Run Alembic database migrations (alembic upgrade head) programmatically on application startup."""
+    try:
+        from pathlib import Path
+        from alembic.config import Config
+        from alembic import command
+
+        backend_dir = Path(__file__).resolve().parent
+        alembic_ini_path = backend_dir / "alembic.ini"
+
+        if not alembic_ini_path.exists():
+            raise FileNotFoundError(f"Alembic configuration file not found at expected location: {alembic_ini_path}")
+
+        logger.info("Executing database migrations (alembic upgrade head) using config at %s...", alembic_ini_path)
+        alembic_cfg = Config(str(alembic_ini_path))
+        alembic_cfg.set_main_option("script_location", str(backend_dir / "db" / "migrations"))
+        
+        # Run Alembic upgrade synchronously using the current async engine's thread pool
+        # This eliminates nested event loop RuntimeError in env.py natively without asyncio.to_thread hacks
+        from db.session import engine
+        
+        def _run_upgrade(connection):
+            alembic_cfg.attributes["connection"] = connection
+            command.upgrade(alembic_cfg, "head")
+            
+        async with engine.begin() as conn:
+            await conn.run_sync(_run_upgrade)
+        
+        logger.info("Database migrations completed successfully.")
+    except Exception as exc:
+        logger.error("Failed to run database migrations: %s", exc, exc_info=True)
+        raise
 
 def create_app() -> FastAPI:
     """
@@ -92,6 +136,9 @@ def create_app() -> FastAPI:
             "name": "Private",
         },
     )
+
+    # Attach SlowAPI limiter so @limiter.limit decorators can find it
+    app.state.limiter = limiter
 
     # ─────────────────────────────────────────────
     # Root Endpoint
@@ -134,6 +181,50 @@ def create_app() -> FastAPI:
 
 def _register_exception_handlers(app: FastAPI) -> None:
     """Register global exception handlers for consistent JSON error responses."""
+
+    @app.exception_handler(RateLimitExceeded)
+    async def rate_limit_handler(
+        request: Request, exc: RateLimitExceeded
+    ) -> JSONResponse:
+        """Return HTTP 429 with Retry-After header when rate limit is exceeded."""
+        retry_after = getattr(exc, "retry_after", None)
+        headers = {}
+        if retry_after is not None:
+            headers["Retry-After"] = str(retry_after)
+        logger.warning(
+            "Rate limit exceeded",
+            extra={
+                "path": request.url.path,
+                "client_ip": request.headers.get("X-Forwarded-For", getattr(request.client, "host", "unknown")),
+            },
+        )
+        return JSONResponse(
+            status_code=429,
+            content={
+                "detail": "Too many requests. Please slow down and try again later.",
+                "code": "RATE_LIMIT_EXCEEDED",
+            },
+            headers=headers,
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
+        logger.warning(
+            "Request validation error",
+            extra={"path": request.url.path},
+        )
+        # Ensure we do not leak internal system details via raw Pydantic errors
+        formatted_errors = [{"loc": err.get("loc"), "msg": err.get("msg"), "type": err.get("type")} for err in exc.errors()]
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": "The request contained invalid data.",
+                "code": "VALIDATION_ERROR",
+                "errors": formatted_errors,
+            },
+        )
 
     @app.exception_handler(CourseForgeError)
     async def courseforge_exception_handler(

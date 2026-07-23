@@ -43,6 +43,7 @@ export function UploadModal({ isOpen, onClose }) {
 
   const handleSubmit = async () => {
     if (!file || !courseTitle) return;
+    if (createCourse.isPending || uploadDoc.isPending) return;
     
     try {
       setStep(2);
@@ -117,9 +118,13 @@ export function UploadModal({ isOpen, onClose }) {
           />
           
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', marginTop: 'var(--space-4)' }}>
-            <Button variant="ghost" onClick={reset}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={!file || !courseTitle || createCourse.isPending}>
-              {createCourse.isPending ? 'Creating...' : 'Upload & Create'}
+            <Button variant="ghost" onClick={reset} aria-label="Cancel course creation">Cancel</Button>
+            <Button 
+              onClick={handleSubmit} 
+              disabled={!file || !courseTitle || createCourse.isPending || uploadDoc.isPending}
+              aria-label="Upload document and create course"
+            >
+              {createCourse.isPending || uploadDoc.isPending ? 'Creating...' : 'Upload & Create'}
             </Button>
           </div>
         </div>

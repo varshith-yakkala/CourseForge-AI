@@ -1,15 +1,19 @@
 """Search routes."""
+import logging
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from api.deps import get_current_active_user, get_db
+from core.rate_limit import limiter, _get_user_or_ip
 from pydantic import BaseModel
 from db.models.user import User
 from db.models.course import Course
 from db.models.document import Document
 from insightforge.engine import InsightForgeEngine
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
@@ -19,8 +23,11 @@ class SearchRequest(BaseModel):
     top_k: int = 10
 
 @router.post("")
+@limiter.limit("30/hour", key_func=_get_user_or_ip)
 async def search_documents(
-    request: SearchRequest,
+    request: Request,
+    response: Response,
+    search_request: SearchRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
@@ -30,15 +37,15 @@ async def search_documents(
         Course.owner_id == current_user.id,
         Document.index_status == "ready"
     )
-    
-    if request.course_id:
-        stmt = stmt.where(Course.id == request.course_id)
-        
+
+    if search_request.course_id:
+        stmt = stmt.where(Course.id == search_request.course_id)
+
     result = await db.execute(stmt)
     docs = result.scalars().all()
-    
+
     valid_doc_ids = [doc.insightforge_doc_id for doc in docs if doc.insightforge_doc_id]
-    
+
     if not valid_doc_ids:
         return {"results": []}
 
@@ -48,11 +55,11 @@ async def search_documents(
         # Retrieve chunks using the public engine API in a separate thread
         chunks = await asyncio.to_thread(
             engine.retrieve_chunks,
-            request.query,
+            search_request.query,
             valid_doc_ids,
-            request.top_k
+            search_request.top_k
         )
-        
+
         return {
             "results": [
                 {
@@ -65,4 +72,12 @@ async def search_documents(
             ]
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception(
+            "Search engine error for user %s: %s",
+            current_user.id,
+            type(e).__name__,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Search is temporarily unavailable. Please try again later.",
+        )

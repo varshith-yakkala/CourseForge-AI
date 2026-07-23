@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
 from api.deps import get_db, get_current_user
+from core.rate_limit import limiter, _get_user_or_ip
 from db.models.user import User
 from services.coach_service import AICoachService
 from services.habit_tracking_service import HabitTrackingService
@@ -13,7 +14,10 @@ router = APIRouter(tags=["coach"])
 
 
 @router.get("/coach/advice", response_model=CoachAdviceResponse)
+@limiter.limit("60/hour", key_func=_get_user_or_ip)
 async def get_coach_advice(
+    request: Request,
+    response: Response,
     course_id: uuid.UUID | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),

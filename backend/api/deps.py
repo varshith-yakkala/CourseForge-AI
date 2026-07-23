@@ -15,8 +15,9 @@ Usage in route handlers:
         ...
 """
 
+import logging
 from typing import AsyncGenerator
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +25,9 @@ from sqlalchemy import select
 
 from core.config import settings
 from db.models.user import User
+from core.exceptions import UnauthorizedError
+
+logger = logging.getLogger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
@@ -43,24 +47,27 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
+    request: Request, token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
 ) -> User:
     """
     JWT authentication dependency.
     Decodes the Bearer token from Authorization header and returns the user.
     """
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    credentials_exception = UnauthorizedError(detail="Invalid authentication credentials")
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=["HS256"],
+            options={"verify_exp": True, "leeway": 10}
+        )
         user_id: str | None = payload.get("sub")
         token_type: str | None = payload.get("type")
         if user_id is None or token_type != "access":
+            logger.warning("Invalid JWT payload: missing sub or incorrect token type", extra={"request_id": request.headers.get("X-Request-ID"), "method": request.method, "path": request.url.path})
             raise credentials_exception
-    except JWTError:
+    except JWTError as e:
+        logger.warning("JWT validation failed: %s", str(e), extra={"request_id": request.headers.get("X-Request-ID"), "method": request.method, "path": request.url.path})
         raise credentials_exception
 
     stmt = select(User).where(User.id == user_id, User.deleted_at.is_(None))

@@ -22,6 +22,7 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     try {
       const data = await authApi.login(formData);
@@ -58,6 +59,7 @@ export default function LoginPage() {
             type="password" 
             value={formData.password}
             onChange={handleChange}
+            minLength={8}
             required 
           />
           <Button type="submit" size="lg" isLoading={loading} style={{ marginTop: 'var(--space-2)' }}>

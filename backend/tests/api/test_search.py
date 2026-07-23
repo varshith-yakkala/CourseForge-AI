@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+from fastapi import Request, Response
 from core.exceptions import InsightForgeError
 
 @pytest.mark.asyncio
@@ -21,8 +22,10 @@ async def test_search_documents_success(mocker):
     mock_chunk = type("Chunk", (), {"content": "Hello", "score": 0.9, "page": 1, "document_id": "doc1"})()
     mock_engine_instance.return_value.retrieve_chunks.return_value = [mock_chunk]
     
-    request = SearchRequest(query="test query")
-    response = await search_documents(request=request, db=mock_db, current_user=mock_user)
+    request_data = SearchRequest(query="test query")
+    req = Request({"type": "http", "method": "POST", "path": "/test", "headers": []})
+    res = Response()
+    response = await search_documents(request=req, response=res, search_request=request_data, db=mock_db, current_user=mock_user)
     
     assert "results" in response
     assert len(response["results"]) == 1
@@ -39,8 +42,9 @@ async def test_search_documents_no_docs(mocker):
     mock_result.scalars.return_value.all.return_value = []
     mock_db.execute.return_value = mock_result
     
-    request = SearchRequest(query="test query")
-    response = await search_documents(request=request, db=mock_db, current_user=mock_user)
+    request_data = SearchRequest(query="test")
+    req = Request({"type": "http", "method": "POST", "path": "/test", "headers": []})
+    res = Response()
+    response = await search_documents(request=req, response=res, search_request=request_data, db=mock_db, current_user=mock_user)
     
     assert response == {"results": []}
-

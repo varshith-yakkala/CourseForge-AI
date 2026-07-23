@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
+from fastapi import Request, Response
 import uuid
 
 @pytest.mark.asyncio
@@ -12,6 +13,7 @@ async def test_get_lesson_detail(mocker):
     l_id = uuid.uuid4()
     c_id = uuid.uuid4()
     
+    req = Request({"type": "http", "method": "POST", "path": "/test", "headers": []})
     mock_lesson = type("Lesson", (), {
         "id": l_id,
         "course_id": c_id,

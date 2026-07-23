@@ -11,12 +11,15 @@ export const Input = forwardRef(({
   icon: Icon,
   ...props 
 }, ref) => {
+  const generatedId = React.useId();
+  const inputId = props.id || generatedId;
   return (
     <div className={cn("cf-input-wrapper", className)}>
-      {label && <label className="cf-input-label">{label}</label>}
+      {label && <label htmlFor={inputId} className="cf-input-label">{label}</label>}
       <div className="cf-input-container">
         {Icon && <Icon className="cf-input-icon" />}
         <input 
+          id={inputId}
           ref={ref}
           className={cn(
             "cf-input",

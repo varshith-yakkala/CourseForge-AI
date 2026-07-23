@@ -22,6 +22,7 @@ export default function RegisterPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     try {
       // 1. Register the user
@@ -69,6 +70,7 @@ export default function RegisterPage() {
             type="password" 
             value={formData.password}
             onChange={handleChange}
+            minLength={8}
             required 
           />
           <Button type="submit" size="lg" isLoading={loading} style={{ marginTop: 'var(--space-2)' }}>

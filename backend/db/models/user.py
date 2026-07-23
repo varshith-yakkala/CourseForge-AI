@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Boolean, String, Text
+from sqlalchemy import Boolean, String, Text, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from db.base import Base, UUIDMixin, TimestampMixin, SoftDeleteMixin
 
@@ -13,7 +13,7 @@ class User(Base, UUIDMixin, TimestampMixin, SoftDeleteMixin):
     role: Mapped[str] = mapped_column(String(20), default="student", nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    last_login_at = mapped_column(Text, nullable=True) # Will use DateTime
+    last_login_at = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     courses = relationship("Course", back_populates="owner")

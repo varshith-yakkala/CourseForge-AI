@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
 from api.deps import get_db, get_current_user
+from core.rate_limit import limiter, _get_user_or_ip
 from db.models.user import User
 from services.flashcard_service import FlashcardService
 from api.flashcards.schemas import FlashcardResponse, ReviewFlashcardRequest, ReviewFlashcardResponse
@@ -11,7 +12,10 @@ router = APIRouter(tags=["flashcards"])
 
 
 @router.get("/courses/{course_id}/flashcards", response_model=list[FlashcardResponse])
+@limiter.limit("30/hour", key_func=_get_user_or_ip)
 async def get_or_generate_flashcards(
+    request: Request,
+    response: Response,
     course_id: uuid.UUID,
     lesson_id: uuid.UUID | None = Query(None),
     mode: str = Query("all", description="all, shuffle, due_today, weak_topics, mastered"),
