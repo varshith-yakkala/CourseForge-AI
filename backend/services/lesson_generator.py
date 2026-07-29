@@ -38,9 +38,19 @@ class LessonGeneratorService:
         
         Lifecycle: PENDING / FAILED / READY ➔ GENERATING ➔ READY or FAILED
         """
+        import uuid
+        try:
+            course_uuid = uuid.UUID(course_id) if isinstance(course_id, str) else course_id
+        except ValueError:
+            course_uuid = course_id
+        try:
+            lesson_uuid = uuid.UUID(lesson_id) if isinstance(lesson_id, str) else lesson_id
+        except ValueError:
+            lesson_uuid = lesson_id
+
         # 1. Fetch Lesson
         stmt_lesson = select(Lesson).where(
-            Lesson.id == lesson_id, Lesson.course_id == course_id
+            Lesson.id == lesson_uuid, Lesson.course_id == course_uuid
         )
         res_lesson = await self.db.execute(stmt_lesson)
         lesson = res_lesson.scalar_one_or_none()
@@ -50,23 +60,23 @@ class LessonGeneratorService:
 
         # 2. Return cached lesson if already generated and not forced
         if not force_regenerate and lesson.status == "ready" and lesson.content_markdown:
-            logger.info(f"Returning cached lesson content for lesson {lesson_id} (v{lesson.version})")
+            logger.info(f"Returning cached lesson content for lesson {lesson_uuid} (v{lesson.version})")
             return lesson
 
         # 3. Fetch Course and Document
-        stmt_course = select(Course).where(Course.id == course_id)
+        stmt_course = select(Course).where(Course.id == course_uuid)
         res_course = await self.db.execute(stmt_course)
         course = res_course.scalar_one_or_none()
 
         if not course:
             raise CourseForgeError(detail="Course not found", status_code=404)
 
-        stmt_doc = select(Document).where(Document.course_id == course_id)
+        stmt_doc = select(Document).where(Document.course_id == course_uuid)
         res_doc = await self.db.execute(stmt_doc)
         document = res_doc.scalar_one_or_none()
 
         # Fetch Topics for this lesson
-        stmt_topics = select(Topic).where(Topic.lesson_id == lesson_id).order_by(Topic.order_index)
+        stmt_topics = select(Topic).where(Topic.lesson_id == lesson_uuid).order_by(Topic.order_index)
         res_topics = await self.db.execute(stmt_topics)
         topics = res_topics.scalars().all()
 

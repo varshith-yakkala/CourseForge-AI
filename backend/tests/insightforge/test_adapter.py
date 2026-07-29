@@ -28,7 +28,8 @@ def test_adapter_index_document():
         assert result.chunk_count == 5
         assert result.indexed is True
 
-def test_adapter_bundled_fallback():
+def test_adapter_bundled_fallback(monkeypatch):
+    monkeypatch.setattr("insightforge.adapter.InsightForgeAdapter._initialize_rag_service", lambda self: None)
     from insightforge.adapter import InsightForgeAdapter
     from core.exceptions import InsightForgeError
     adapter = InsightForgeAdapter()

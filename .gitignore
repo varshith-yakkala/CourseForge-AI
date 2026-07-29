@@ -67,6 +67,12 @@ backend/.env.*
 frontend/.env
 frontend/.env.*
 
+# Scratch scripts & temporary test assets
+scratch_*
+backend/scratch_*
+backend/patch_db.py
+*.pdf
+
 # But keep example/template files tracked so developers know what vars are needed
 !.env.example
 !**/.env.example

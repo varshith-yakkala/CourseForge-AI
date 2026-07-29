@@ -91,6 +91,10 @@ class Settings(BaseSettings):
     # FILE STORAGE
     # ─────────────────────────────────────────────
     UPLOAD_DIR: str = "./uploads"
+    STORAGE_DIR: str = Field(
+        default="./backend/storage/data",
+        validation_alias=AliasChoices("storage_dir", "insightforge_storage_dir"),
+    )
     EXPORT_DIR: str = "./exports"
     MAX_UPLOAD_SIZE_MB: int = Field(default=50, gt=0)
     ALLOWED_UPLOAD_EXTENSIONS: str = ".pdf,.txt,.md"
@@ -216,6 +220,10 @@ class Settings(BaseSettings):
         return Path(self.UPLOAD_DIR).resolve()
 
     @property
+    def storage_dir_path(self) -> Path:
+        return Path(self.STORAGE_DIR).resolve()
+
+    @property
     def export_dir_path(self) -> Path:
         return Path(self.EXPORT_DIR).resolve()
 
@@ -336,14 +344,36 @@ class Settings(BaseSettings):
         """
         Add InsightForge-AI to sys.path so its modules can be imported
         by the InsightForge adapter without modification if configured.
-        Only adds the path if it actually exists to avoid polluting sys.path.
         """
+        # Enforce PyTorch usage for transformers to avoid Keras 3 issues
+        os.environ.setdefault("USE_TF", "0")
+        os.environ.setdefault("USE_TORCH", "1")
+
+        # Ensure CourseForge backend root is FIRST on sys.path
+        courseforge_backend = str(Path(__file__).resolve().parent.parent)
+        if courseforge_backend in sys.path:
+            sys.path.remove(courseforge_backend)
+        sys.path.insert(0, courseforge_backend)
+
+        path_to_check: Path | None = None
         if self.INSIGHTFORGE_PATH:
-            path = Path(self.INSIGHTFORGE_PATH)
-            if path.exists():
-                insight_path = str(path.resolve())
-                if insight_path not in sys.path:
-                    sys.path.insert(0, insight_path)
+            path_to_check = Path(self.INSIGHTFORGE_PATH)
+        else:
+            # Check candidate paths for local development
+            candidates = [
+                Path(__file__).resolve().parents[3] / "aiforage" / "InsightForge-AI",
+                Path(__file__).resolve().parents[3] / "InsightForge-AI",
+                Path("../../aiforage/InsightForge-AI").resolve(),
+            ]
+            for cand in candidates:
+                if cand.exists():
+                    path_to_check = cand
+                    break
+
+        if path_to_check and path_to_check.exists():
+            insight_path = str(path_to_check.resolve())
+            if insight_path not in sys.path:
+                sys.path.append(insight_path)
         return self
 
 

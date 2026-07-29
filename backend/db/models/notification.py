@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Boolean, ForeignKey, String, Text, DateTime
+from sqlalchemy import Boolean, ForeignKey, String, Text, DateTime, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from db.base import Base, UUIDMixin
@@ -14,6 +14,5 @@ class Notification(Base, UUIDMixin):
     body: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, index=True, nullable=False)
     link: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata_ = mapped_column("metadata", JSONB, nullable=True)
+    metadata_ = mapped_column("metadata", JSON().with_variant(JSONB, "postgresql"), nullable=True)
     created_at = mapped_column(DateTime(timezone=True), nullable=False)
-

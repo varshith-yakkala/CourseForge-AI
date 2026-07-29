@@ -1,6 +1,6 @@
 import uuid
 from datetime import date
-from sqlalchemy import ForeignKey, String, Text, Date
+from sqlalchemy import ForeignKey, String, Text, Date, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from db.base import Base, UUIDMixin, TimestampMixin
@@ -12,4 +12,4 @@ class WeeklyReport(Base, UUIDMixin, TimestampMixin):
     course_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
     week_start_date = mapped_column(Date, nullable=False)
     summary_md: Mapped[str] = mapped_column(Text, nullable=False)
-    metrics_json = mapped_column(JSONB, nullable=True)
+    metrics_json = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=True)

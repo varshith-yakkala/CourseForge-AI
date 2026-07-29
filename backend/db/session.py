@@ -40,14 +40,21 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────
 # Engine — one per application process
 # ─────────────────────────────────────────────
+engine_kwargs = {
+    "echo": settings.APP_DEBUG,
+    "pool_pre_ping": True,
+}
+if not settings.database_url.startswith("sqlite"):
+    engine_kwargs.update({
+        "pool_size": 3,
+        "max_overflow": 5,
+        "pool_timeout": 30,
+        "pool_recycle": 1800,
+    })
+
 engine: AsyncEngine = create_async_engine(
     settings.database_url,
-    echo=settings.APP_DEBUG,            # Log all SQL in debug mode
-    pool_size=3,                        # Connections kept open in pool (lower for Render/Neon scaling)
-    max_overflow=5,                     # Extra connections allowed above pool_size
-    pool_timeout=30,                    # Seconds to wait before giving up on getting a connection
-    pool_pre_ping=True,                 # Validate connection before use (avoids stale connections)
-    pool_recycle=1800,                  # Recycle connections after 30 minutes
+    **engine_kwargs,
 )
 
 # ─────────────────────────────────────────────

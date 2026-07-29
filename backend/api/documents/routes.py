@@ -64,17 +64,16 @@ async def upload_document(
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    # ── Prevent duplicate uploads ─────────────────────────────────────────────
-    stmt_doc = select(Document).where(Document.course_id == course_id)
-    result_doc = await db.execute(stmt_doc)
-    if result_doc.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Course already has an uploaded document")
+    # ── Multi-document support allowed ──────────────────────────────────────────
+
+    logger.info("Entering upload route: course_id=%s, filename=%s", course_id, file.filename)
 
     # ── Prepare storage ───────────────────────────────────────────────────────
     upload_dir = str(settings.upload_dir_path)
     os.makedirs(upload_dir, exist_ok=True)
     file_id = uuid.uuid4()
     stored_path = os.path.join(upload_dir, f"{file_id}.pdf")
+    logger.info("Saving PDF to %s", stored_path)
 
     max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
     file_size_bytes = 0
@@ -120,6 +119,7 @@ async def upload_document(
         raise
 
     # ── Persist document record ───────────────────────────────────────────────
+    logger.info("Creating Document row for course_id=%s", course_id)
     doc = Document(
         course_id=course_id,
         owner_id=current_user.id,
@@ -140,6 +140,7 @@ async def upload_document(
     t_start = time.perf_counter()
     ProgressTracker.set_stage(str(doc.id), "uploading_pdf", 15, "PDF file validated and stored")
 
+    logger.info("Calling process_document(%s)", doc.id)
     from tasks.document_tasks import process_document
     await process_document(str(doc.id))
     await db.refresh(doc)
@@ -147,6 +148,7 @@ async def upload_document(
     t_total = round((time.perf_counter() - t_start) * 1000, 2)
     ProgressTracker.record_timing(str(doc.id), "total_processing_ms", t_total)
     response.headers["X-Processing-Time-ms"] = str(t_total)
+    logger.info("Upload route finished indexing successfully for doc_id=%s", doc.id)
 
     return doc
 
@@ -169,6 +171,23 @@ async def get_document_by_course(
         raise HTTPException(status_code=404, detail="Document not found")
 
     return doc
+
+
+@router.get("/course/{course_id}/all", response_model=list[DocumentResponse])
+async def get_all_documents_by_course(
+    course_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """Get all uploaded documents for a course."""
+    stmt = select(Document).where(
+        Document.course_id == course_id,
+        Document.owner_id == current_user.id
+    ).order_by(Document.created_at.desc())
+    result = await db.execute(stmt)
+    docs = result.scalars().all()
+    return docs
+
 
 
 @router.get("/{document_id}/progress")

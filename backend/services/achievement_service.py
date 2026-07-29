@@ -57,16 +57,26 @@ class AchievementService:
         self.db = db
 
     async def get_user_achievements(self, user_id: str) -> list[UserAchievement]:
-        stmt = select(UserAchievement).where(UserAchievement.user_id == user_id).order_by(UserAchievement.unlocked_at.desc())
+        import uuid
+        try:
+            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+        except ValueError:
+            user_uuid = user_id
+        stmt = select(UserAchievement).where(UserAchievement.user_id == user_uuid).order_by(UserAchievement.unlocked_at.desc())
         res = await self.db.execute(stmt)
         return res.scalars().all()
 
     async def check_and_unlock(self, user_id: str, badge_key: str) -> UserAchievement | None:
+        import uuid
+        try:
+            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+        except ValueError:
+            user_uuid = user_id
         if badge_key not in BADGE_DEFINITIONS:
             return None
 
         stmt = select(UserAchievement).where(
-            UserAchievement.user_id == user_id,
+            UserAchievement.user_id == user_uuid,
             UserAchievement.badge_key == badge_key,
         )
         res = await self.db.execute(stmt)
@@ -77,7 +87,7 @@ class AchievementService:
 
         def_data = BADGE_DEFINITIONS[badge_key]
         achievement = UserAchievement(
-            user_id=user_id,
+            user_id=user_uuid,
             badge_key=badge_key,
             title=def_data["title"],
             description=def_data["description"],

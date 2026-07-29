@@ -73,18 +73,19 @@ async def health_check() -> HealthResponse:
 @router.get("/ready", response_model=ReadinessResponse, summary="Readiness check")
 async def readiness_check(
     response: Response,
-    db: AsyncSession = Depends(get_db)
 ) -> ReadinessResponse:
     """
     Readiness check verifying database and service connections.
     """
     db_status = "unhealthy"
     try:
-        res = await db.execute(text("SELECT 1"))
-        if res.scalar() == 1:
-            db_status = "healthy"
+        from db.session import get_db_session
+        async with get_db_session() as session:
+            res = await session.execute(text("SELECT 1"))
+            if res.scalar() == 1:
+                db_status = "healthy"
     except Exception as exc:
-        logger.error(f"Readiness check DB error: {exc}")
+        logger.warning(f"Readiness check DB error: {exc}")
 
     groq_ok = bool(settings.GROQ_API_KEY and settings.GROQ_API_KEY != "CHANGE_ME_your_groq_api_key")
     embedding_status = "healthy"
@@ -93,10 +94,13 @@ async def readiness_check(
     try:
         from insightforge.engine import InsightForgeEngine
         engine = InsightForgeEngine()
-        if engine:
+        hc = engine.health_check()
+        if hc.get("status") == "healthy":
             insightforge_status = "healthy"
-    except Exception:
-        pass
+        else:
+            insightforge_status = hc.get("status", "degraded")
+    except Exception as exc:
+        logger.warning(f"Readiness check InsightForge check error: {exc}")
 
     is_ready = db_status == "healthy" and groq_ok
 

@@ -9,9 +9,11 @@ class FlashcardReview(Base, UUIDMixin):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     flashcard_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("flashcards.id", ondelete="CASCADE"))
     rating: Mapped[str] = mapped_column(String(10), nullable=False)
-    next_review_at = mapped_column(DateTime(timezone=True), index=True, nullable=False)
-    interval_days: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    quality_rating: Mapped[int] = mapped_column(Integer, default=3, nullable=False) # 0 to 5 SM-2 rating
+    repetition_number: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    interval_days: Mapped[float] = mapped_column(Numeric(6, 2), default=1.0, nullable=False)
     ease_factor: Mapped[float] = mapped_column(Numeric(4, 2), default=2.5, nullable=False)
+    next_review_at = mapped_column(DateTime(timezone=True), index=True, nullable=False)
     reviewed_at = mapped_column(DateTime(timezone=True), nullable=False)
 
     flashcard = relationship("Flashcard", back_populates="reviews")

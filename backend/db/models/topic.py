@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import ForeignKey, Integer, String, Text, ARRAY
+from sqlalchemy import ForeignKey, Integer, String, Text, ARRAY, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from db.base import Base, UUIDMixin, TimestampMixin
 
@@ -11,6 +11,6 @@ class Topic(Base, UUIDMixin, TimestampMixin):
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, nullable=False)
-    key_terms = mapped_column(ARRAY(Text), nullable=True)
+    key_terms = mapped_column(JSON().with_variant(ARRAY(Text), "postgresql"), nullable=True)
     lesson = relationship("Lesson", back_populates="topics")
     subtopics = relationship("Subtopic", back_populates="topic", cascade="all, delete-orphan")

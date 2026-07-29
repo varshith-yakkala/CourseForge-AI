@@ -61,10 +61,16 @@ async def get_current_user(
             algorithms=["HS256"],
             options={"verify_exp": True, "leeway": 10}
         )
-        user_id: str | None = payload.get("sub")
+        user_id_str: str | None = payload.get("sub")
         token_type: str | None = payload.get("type")
-        if user_id is None or token_type != "access":
+        if user_id_str is None or token_type != "access":
             logger.warning("Invalid JWT payload: missing sub or incorrect token type", extra={"request_id": request.headers.get("X-Request-ID"), "method": request.method, "path": request.url.path})
+            raise credentials_exception
+        import uuid
+        try:
+            user_id = uuid.UUID(user_id_str)
+        except ValueError:
+            logger.warning("Invalid UUID format in JWT sub claim: %s", user_id_str)
             raise credentials_exception
     except JWTError as e:
         logger.warning("JWT validation failed: %s", str(e), extra={"request_id": request.headers.get("X-Request-ID"), "method": request.method, "path": request.url.path})

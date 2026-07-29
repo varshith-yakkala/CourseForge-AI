@@ -15,7 +15,8 @@ from datetime import datetime, timezone
 # Mock user for dependencies
 mock_user = type("User", (), {
     "id": "123e4567-e89b-12d3-a456-426614174000",
-    "email": "test@example.com", 
+    "email": "test@example.com",
+    "full_name": "Test User",
     "is_active": True,
     "role": "student",
     "is_verified": True,
@@ -47,10 +48,15 @@ async def override_get_db():
     mock_db.execute.return_value = MockResult()
     yield mock_db
 
-# Override dependencies for test client
-app.dependency_overrides[get_current_user] = override_get_current_user
-app.dependency_overrides[get_current_active_user] = override_get_current_user
-app.dependency_overrides[get_db] = override_get_db
+@pytest.fixture(autouse=True)
+def setup_security_overrides():
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    app.dependency_overrides[get_current_active_user] = override_get_current_user
+    app.dependency_overrides[get_db] = override_get_db
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
+    app.dependency_overrides.pop(get_current_active_user, None)
+    app.dependency_overrides.pop(get_db, None)
 
 client = TestClient(app)
 
@@ -104,8 +110,10 @@ def test_upload_magic_byte_validation():
     finally:
         app.dependency_overrides[get_db] = override_get_db
 
-def test_upload_file_size_validation():
+def test_upload_file_size_validation(monkeypatch):
     """Test that uploads exceeding the size limit are rejected."""
+    from core.config import settings
+    monkeypatch.setattr(settings, "MAX_UPLOAD_SIZE_MB", 10)
     # Generate 11MB of data (limit is 10MB)
     large_data = b"%PDF-1.4\n" + b"0" * (11 * 1024 * 1024)
     

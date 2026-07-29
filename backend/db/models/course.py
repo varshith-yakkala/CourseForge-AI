@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, Numeric, ARRAY
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, Numeric, ARRAY, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from db.base import Base, UUIDMixin, TimestampMixin, SoftDeleteMixin
 
@@ -16,7 +16,9 @@ class Course(Base, UUIDMixin, TimestampMixin, SoftDeleteMixin):
     estimated_duration_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
     language: Mapped[str] = mapped_column(String(10), default="en", nullable=False)
     is_public: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    tags = mapped_column(ARRAY(Text), nullable=True, index=True)
+    is_shared: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    share_token: Mapped[str | None] = mapped_column(String(64), unique=True, index=True, nullable=True)
+    tags = mapped_column(JSON().with_variant(ARRAY(Text), "postgresql"), nullable=True)
 
     owner = relationship("User", back_populates="courses")
     document = relationship("Document", back_populates="course", uselist=False)

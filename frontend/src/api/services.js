@@ -68,6 +68,10 @@ export const documentsApi = {
     const { data } = await apiClient.get(`/documents/course/${courseId}`);
     return data;
   },
+  getAllByCourseId: async (courseId) => {
+    const { data } = await apiClient.get(`/documents/course/${courseId}/all`);
+    return data;
+  },
   retry: async (id) => {
     const { data } = await apiClient.post(`/documents/${id}/retry`);
     return data;
@@ -77,6 +81,10 @@ export const documentsApi = {
 export const searchApi = {
   search: async (query, courseId = null) => {
     const { data } = await apiClient.post('/search', { query, course_id: courseId });
+    return data;
+  },
+  aiSearch: async (query, courseId = null, persona = 'intermediate', style = 'detailed') => {
+    const { data } = await apiClient.post('/search/ai-query', { query, course_id: courseId, persona, style });
     return data;
   },
 };
@@ -106,6 +114,10 @@ export const lessonsApi = {
     const { data } = await apiClient.post(`/courses/${courseId}/lessons/${lessonId}/ask`, { question });
     return data;
   },
+  studyAssistant: async (courseId, lessonId, action) => {
+    const { data } = await apiClient.post(`/courses/${courseId}/lessons/${lessonId}/study-assistant`, { action });
+    return data;
+  },
 };
 
 export const quizzesApi = {
@@ -117,6 +129,10 @@ export const quizzesApi = {
   },
   submitAttempt: async (quizId, attemptData) => {
     const { data } = await apiClient.post(`/quizzes/${quizId}/submit`, attemptData);
+    return data;
+  },
+  getAttempts: async (quizId) => {
+    const { data } = await apiClient.get(`/quizzes/${quizId}/attempts`);
     return data;
   },
 };
@@ -132,7 +148,36 @@ export const flashcardsApi = {
     const { data } = await apiClient.post(`/flashcards/${flashcardId}/review`, { rating });
     return data;
   },
+  exportDeck: async (courseId, format = 'json') => {
+    const response = await apiClient.get(`/courses/${courseId}/flashcards/export`, {
+      params: { format },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
+
+export const notesApi = {
+  getCourseNotes: async (courseId, lessonId = null) => {
+    const { data } = await apiClient.get(`/notes/course/${courseId}`, {
+      params: { lesson_id: lessonId },
+    });
+    return data;
+  },
+  createNote: async (noteData) => {
+    const { data } = await apiClient.post('/notes', noteData);
+    return data;
+  },
+  updateNote: async (id, updateData) => {
+    const { data } = await apiClient.put(`/notes/${id}`, updateData);
+    return data;
+  },
+  deleteNote: async (id) => {
+    const { data } = await apiClient.delete(`/notes/${id}`);
+    return data;
+  },
+};
+
 
 export const analyticsApi = {
   getAnalytics: async (courseId) => {

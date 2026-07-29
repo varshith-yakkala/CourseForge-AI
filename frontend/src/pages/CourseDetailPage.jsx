@@ -10,13 +10,28 @@ import { Trash2, AlertCircle, RefreshCw, Search, FileText, Play, Layers, Trendin
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { extractApiError } from '@/utils/errorUtils';
 
-function CourseStructure({ courseId }) {
+import { QuizModal } from '@/components/QuizModal';
+import { HelpCircle, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+
+function CourseStructure({ courseId, onOpenQuiz, onGenerate, isGenerating }) {
   const { data: structure, isLoading } = useCourseStructure(courseId);
   
   if (isLoading) return <Skeleton height="200px" />;
   if (!structure || structure.lessons.length === 0) {
-    return <EmptyState title="No lessons found" description="Generate the course to see lessons." />;
+    return (
+      <div style={{ padding: '36px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-default)', margin: '16px 0' }}>
+        <Play size={44} style={{ color: '#38bdf8', marginBottom: '12px' }} />
+        <h3 className="text-heading-md" style={{ marginBottom: '8px' }}>Course Blueprint Ready To Generate!</h3>
+        <p className="text-body-sm text-secondary" style={{ marginBottom: '24px', maxWidth: '500px', margin: '0 auto 24px auto' }}>
+          Your uploaded PDF has been successfully indexed into the RAG store. Click below to synthesize custom lessons, topics, and interactive quizzes!
+        </p>
+        <Button variant="primary" icon={Play} size="lg" onClick={onGenerate} isLoading={isGenerating}>
+          Generate Course Blueprint
+        </Button>
+      </div>
+    );
   }
+
   
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
@@ -24,9 +39,14 @@ function CourseStructure({ courseId }) {
         <div key={lesson.id} style={{ padding: 'var(--space-6)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', background: 'var(--bg-secondary)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-2)' }}>
             <h3 className="text-heading-md">Lesson {lesson.order_index + 1}: {lesson.title}</h3>
-            <Link to={`/learn/${courseId}/${lesson.id}`}>
-              <Button icon={Play} size="sm">Start Lesson</Button>
-            </Link>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Button icon={HelpCircle} variant="outline" size="sm" onClick={() => onOpenQuiz(lesson)}>
+                Take Quiz
+              </Button>
+              <Link to={`/learn/${courseId}/${lesson.id}`}>
+                <Button icon={Play} size="sm">Start Lesson</Button>
+              </Link>
+            </div>
           </div>
           <p className="text-body-md text-secondary" style={{ marginBottom: 'var(--space-4)' }}>{lesson.summary}</p>
           
@@ -51,6 +71,7 @@ function CourseStructure({ courseId }) {
   );
 }
 
+
 export default function CourseDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -64,7 +85,11 @@ export default function CourseDetailPage() {
   const addNotification = useNotificationStore(s => s.addNotification);
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState(null);
+  const [aiSearchResult, setAiSearchResult] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSources, setShowSources] = useState(false);
+  const [activeTab, setActiveTab] = useState('lessons');
+  const [quizLesson, setQuizLesson] = useState(null);
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this course?')) {
@@ -100,11 +125,16 @@ export default function CourseDetailPage() {
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    setAiSearchResult(null);
     try {
-      const res = await searchApi.mutateAsync({ query: searchQuery, courseId: id });
-      setSearchResults(res.results);
+      const { searchApi: searchServiceApi } = await import('@/api/services');
+      const res = await searchServiceApi.aiSearch(searchQuery.trim(), id);
+      setAiSearchResult(res);
     } catch (error) {
-      addNotification({ title: 'Search failed', message: extractApiError(error), type: 'error' });
+      addNotification({ title: 'AI Search failed', message: extractApiError(error), type: 'error' });
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -130,13 +160,34 @@ export default function CourseDetailPage() {
           <p className="text-body-md text-secondary">{course.description || 'No description available.'}</p>
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          <Button variant="outline" icon={FileText} onClick={() => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/pdf';
+            input.onchange = async (e) => {
+              const file = e.target.files[0];
+              if (file) {
+                try {
+                  const { documentsApi } = await import('@/api/services');
+                  await documentsApi.upload(id, file);
+                  addNotification({ title: 'PDF Uploaded', message: 'New document added and indexed into course RAG store.', type: 'success' });
+                  window.location.reload();
+                } catch (err) {
+                  addNotification({ title: 'Upload failed', message: extractApiError(err), type: 'error' });
+                }
+              }
+            };
+            input.click();
+          }}>
+            Add Document
+          </Button>
           <Link to={`/flashcards/${id}`}>
             <Button variant="outline" icon={Layers}>Flashcards</Button>
           </Link>
           <Link to={`/analytics/${id}`}>
             <Button variant="outline" icon={TrendingUp}>Analytics</Button>
           </Link>
-          {document && document.index_status === 'ready' && course.status === 'processing' && (
+          {document && document.index_status === 'ready' && (
             <Button variant="primary" icon={Play} onClick={handleGenerate} isLoading={generateCourse.isPending}>
               Generate Course Blueprint
             </Button>
@@ -166,68 +217,97 @@ export default function CourseDetailPage() {
         )}
       </div>
 
-      {document && document.index_status === 'processing' && (
-        <div style={{ padding: 'var(--space-6)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-8)', textAlign: 'center' }}>
-          <RefreshCw className="text-brand" style={{ animation: 'spin 2s linear infinite', marginBottom: 'var(--space-4)' }} size={32} />
-          <h3 className="text-heading-sm">Processing Document</h3>
-          <p className="text-body-sm text-secondary">We are currently indexing your PDF (InsightForge-AI).</p>
-        </div>
-      )}
-      
-      {course.status === 'generating_outline' && (
-        <div style={{ padding: 'var(--space-6)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-8)', textAlign: 'center' }}>
-          <RefreshCw className="text-brand" style={{ animation: 'spin 2s linear infinite', marginBottom: 'var(--space-4)' }} size={32} />
-          <h3 className="text-heading-sm">Generating Blueprint</h3>
-          <p className="text-body-sm text-secondary">Designing your course structure, topics, and lessons...</p>
-        </div>
-      )}
-      
-      {course.status === 'error' && (
-        <div style={{ padding: 'var(--space-6)', border: '1px solid var(--color-danger)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-8)', display: 'flex', alignItems: 'flex-start', gap: 'var(--space-4)' }}>
-          <AlertCircle style={{ color: 'var(--color-danger)' }} size={24} />
-          <div>
-            <h3 className="text-heading-sm" style={{ color: 'var(--color-danger)' }}>Generation Failed</h3>
-            <p className="text-body-sm text-secondary">{course.generation_error || 'There was a problem generating the course.'}</p>
-            <Button size="sm" variant="outline" style={{ marginTop: 'var(--space-4)' }} onClick={handleGenerate} isLoading={generateCourse.isPending}>Try Again</Button>
-          </div>
-        </div>
-      )}
-
+      {/* AI Synthesized Search Form */}
       {document && document.index_status === 'ready' && (
         <div style={{ marginBottom: 'var(--space-8)' }}>
           <form onSubmit={handleSearch} style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
             <div style={{ flex: 1 }}>
               <Input 
-                placeholder="Ask a question or search the document..." 
+                placeholder="Ask Course AI anything about your PDFs (Synthesized LLM Answer)..." 
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button type="submit" icon={Search} isLoading={searchApi.isPending}>Search</Button>
+            <Button type="submit" icon={Sparkles} isLoading={isSearching}>Ask AI</Button>
           </form>
-          
-          {searchResults && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-              <h3 className="text-heading-sm">Search Results ({searchResults.length})</h3>
-              {searchResults.length === 0 ? (
-                <p className="text-body-sm text-secondary">No results found in the document.</p>
-              ) : (
-                searchResults.map((res, i) => (
-                  <div key={i} style={{ padding: 'var(--space-4)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                    <p className="text-body-sm" style={{ marginBottom: 'var(--space-2)' }}>"{res.content}"</p>
-                    <div style={{ display: 'flex', gap: 'var(--space-4)', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FileText size={14}/> Page {res.page || '?'}</span>
-                      <span>Relevance: {(res.score * 100).toFixed(1)}%</span>
-                    </div>
-                  </div>
-                ))
+
+          {aiSearchResult && (
+            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              {/* Summary Card */}
+              <div style={{ background: 'rgba(56, 189, 248, 0.1)', borderLeft: '4px solid #38bdf8', padding: '12px 16px', borderRadius: '6px' }}>
+                <h4 style={{ margin: '0 0 4px 0', color: '#38bdf8', fontSize: '0.95rem' }}>Direct AI Summary</h4>
+                <div style={{ fontSize: '1rem', lineHeight: 1.5 }}>{aiSearchResult.summary}</div>
+              </div>
+
+              {/* Detailed Breakdown */}
+              <div>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>Synthesized Explanation</h4>
+                <div style={{ fontSize: '0.95rem', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                  {aiSearchResult.explanation}
+                </div>
+              </div>
+
+              {/* Key Points */}
+              {aiSearchResult.key_points && aiSearchResult.key_points.length > 0 && (
+                <div>
+                  <h4 style={{ margin: '0 0 6px 0', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>Key Points</h4>
+                  <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: 1.6 }}>
+                    {aiSearchResult.key_points.map((pt, i) => (
+                      <li key={i}>{pt}</li>
+                    ))}
+                  </ul>
+                </div>
               )}
+
+              {/* Collapsible Retrieved Sources */}
+              <div style={{ border: '1px solid var(--border-default)', borderRadius: '8px', overflow: 'hidden' }}>
+                <button
+                  onClick={() => setShowSources(!showSources)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    background: 'var(--bg-primary)',
+                    border: 'none',
+                    color: 'var(--text-secondary)',
+                    display: 'flex',
+                    justify: 'space-between',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FileText size={16} />
+                    <span>View Retrieved RAG Context Chunks ({aiSearchResult.retrieved_sources?.length || 0})</span>
+                  </div>
+                  {showSources ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+
+                {showSources && (
+                  <div style={{ padding: '14px', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {aiSearchResult.retrieved_sources?.map((src) => (
+                      <div key={src.source_id} style={{ background: 'var(--bg-primary)', padding: '10px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#38bdf8', marginBottom: '4px', fontWeight: 600 }}>
+                          <span>📄 {src.file_name} {src.page ? `(Page ${src.page})` : ''}</span>
+                          <span>Score: {src.similarity_score}</span>
+                        </div>
+                        <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                          "{src.snippet}"
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
       )}
 
+      {/* Tabs */}
       <Tabs 
+        activeTab={activeTab}
+        onChange={setActiveTab}
         tabs={[
           { id: 'lessons', label: 'Lessons' },
           { id: 'quiz', label: 'Quizzes' },
@@ -237,13 +317,54 @@ export default function CourseDetailPage() {
       
       <div style={{ marginTop: 'var(--space-6)' }}>
         {course.status === 'ready' ? (
-          <CourseStructure courseId={course.id} />
+          activeTab === 'lessons' ? (
+            <CourseStructure
+              courseId={course.id}
+              onOpenQuiz={(lesson) => setQuizLesson(lesson)}
+              onGenerate={handleGenerate}
+              isGenerating={generateCourse.isPending}
+            />
+          ) : activeTab === 'quiz' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ padding: '20px', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-default)' }}>
+                <h3 className="text-heading-md" style={{ marginBottom: '8px' }}>AI Quiz Generator & Practice</h3>
+                <p className="text-body-sm text-secondary" style={{ marginBottom: '16px' }}>Select any lesson below to generate and take an interactive quiz (MCQ, True/False, Fill-in, Short Answer).</p>
+              </div>
+              <CourseStructure
+                courseId={course.id}
+                onOpenQuiz={(lesson) => setQuizLesson(lesson)}
+                onGenerate={handleGenerate}
+                isGenerating={generateCourse.isPending}
+              />
+            </div>
+
+          ) : (
+            <div style={{ padding: '30px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-default)' }}>
+              <Layers size={48} className="text-brand" style={{ marginBottom: '16px' }} />
+              <h3 className="text-heading-md" style={{ marginBottom: '8px' }}>Course Flashcard Deck</h3>
+              <p className="text-body-sm text-secondary" style={{ marginBottom: '20px' }}>Active recall powered by SuperMemo SM-2 spaced repetition.</p>
+              <Link to={`/flashcards/${id}`}>
+                <Button variant="primary" icon={Layers} size="lg">Study Flashcards Now</Button>
+              </Link>
+            </div>
+          )
         ) : (
           <div style={{ padding: 'var(--space-8)', border: '1px dashed var(--border-default)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
             <p className="text-secondary">Course structure has not been generated yet.</p>
           </div>
         )}
       </div>
+
+      {quizLesson && (
+        <QuizModal
+          isOpen={!!quizLesson}
+          onClose={() => setQuizLesson(null)}
+          courseId={id}
+          lessonId={quizLesson.id}
+          lessonTitle={quizLesson.title}
+        />
+      )}
     </div>
   );
 }
+

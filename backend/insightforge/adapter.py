@@ -48,6 +48,7 @@ class InsightForgeAdapter:
     """
 
     def __init__(self) -> None:
+        self._init_error: Exception | None = None
         self._rag = self._initialize_rag_service()
 
     def _initialize_rag_service(self) -> Any:
@@ -55,7 +56,7 @@ class InsightForgeAdapter:
         Import InsightForge RAGService and initialize it.
 
         If external InsightForge package is missing or fails to initialize,
-        logs a warning and gracefully falls back so startup proceeds without crashing.
+        logs details and preserves the underlying exception.
         """
         try:
             # Try importing directly or from backend package
@@ -71,11 +72,14 @@ class InsightForgeAdapter:
             )
             return rag
 
-        except (ImportError, Exception) as exc:
-            logger.warning(
-                "InsightForge RAGService external module unavailable (%s). "
-                "Continuing with bundled internal engine.",
-                exc,
+        except Exception as exc:
+            import traceback
+            self._init_error = exc
+            logger.error(
+                "InsightForge RAGService initialization failed!\nException Type: %s\nException Repr: %s\nTraceback:\n%s",
+                type(exc).__name__,
+                repr(exc),
+                traceback.format_exc(),
             )
             return None
 
@@ -86,7 +90,10 @@ class InsightForgeAdapter:
     def index_document(self, file_path: str) -> IndexResult:
         """Wrap InsightForge RAGService.load_document()."""
         if not self._rag:
-            raise InsightForgeError(UNAVAILABLE_ERROR_MSG)
+            err_msg = UNAVAILABLE_ERROR_MSG
+            if self._init_error:
+                err_msg += f" (Root Cause: {type(self._init_error).__name__}: {self._init_error})"
+            raise InsightForgeError(err_msg) from self._init_error
 
         try:
             result = self._rag.load_document(file_path)

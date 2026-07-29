@@ -66,6 +66,13 @@ async def lifespan(app: FastAPI):
     _ensure_runtime_directories()
     await _run_db_migrations()
 
+    # Initialize InsightForgeEngine singleton at app startup and bind to app.state
+    try:
+        from insightforge.engine import InsightForgeEngine
+        app.state.engine = InsightForgeEngine()
+        logger.info("InsightForgeEngine singleton initialized and bound to app.state.engine.")
+    except Exception as exc:
+        logger.error("Failed to initialize InsightForgeEngine singleton during app startup: %s", exc, exc_info=True)
 
     for route in app.routes:
         methods = getattr(route, "methods", None)
@@ -110,8 +117,7 @@ async def _run_db_migrations() -> None:
         
         logger.info("Database migrations completed successfully.")
     except Exception as exc:
-        logger.error("Failed to run database migrations: %s", exc, exc_info=True)
-        raise
+        logger.warning("Database migration skipped (DB server may be offline or unreachable): %s", exc)
 
 def create_app() -> FastAPI:
     """
@@ -144,7 +150,7 @@ def create_app() -> FastAPI:
     app.state.limiter = limiter
 
     # ─────────────────────────────────────────────
-    # Root Endpoint
+    # Root & Docs Endpoints
     # ─────────────────────────────────────────────
     @app.get("/", summary="Root Endpoint", tags=["Root"])
     async def root():
@@ -154,6 +160,16 @@ def create_app() -> FastAPI:
             "docs": "/api/docs",
             "health": "/api/v1/health",
         }
+
+    @app.get("/docs", include_in_schema=False)
+    async def docs_redirect():
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/api/docs")
+
+    @app.get("/redoc", include_in_schema=False)
+    async def redoc_redirect():
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/api/redoc")
 
     # ─────────────────────────────────────────────
     # Middleware
@@ -250,33 +266,49 @@ def _register_exception_handlers(app: FastAPI) -> None:
     async def unhandled_exception_handler(
         request: Request, exc: Exception
     ) -> JSONResponse:
-        logger.exception(
-            "Unhandled exception",
-            extra={"path": request.url.path},
+        import traceback
+        tb_str = traceback.format_exc()
+        logger.error(
+            "Unhandled exception on %s %s:\nType: %s\nMessage: %s\nTraceback:\n%s",
+            request.method,
+            request.url.path,
+            type(exc).__name__,
+            str(exc),
+            tb_str,
+            extra={"path": request.url.path, "exception_type": type(exc).__name__},
         )
+        content = {
+            "detail": "An unexpected error occurred. Please try again.",
+            "code": "INTERNAL_ERROR",
+        }
+        if settings.APP_DEBUG:
+            content["debug_message"] = f"{type(exc).__name__}: {str(exc)}"
+            content["traceback"] = tb_str.splitlines()
         return JSONResponse(
             status_code=500,
-            content={
-                "detail": "An unexpected error occurred. Please try again.",
-                "code": "INTERNAL_ERROR",
-            },
+            content=content,
         )
 
 
 
 
 def _ensure_runtime_directories() -> None:
-    """Create upload and export directories if they do not exist."""
+    """Create upload, storage, export, FAISS, and BM25 directories automatically on startup if they do not exist."""
     settings.upload_dir_path.mkdir(parents=True, exist_ok=True)
     settings.export_dir_path.mkdir(parents=True, exist_ok=True)
+
+    storage_root = settings.storage_dir_path
+    storage_root.mkdir(parents=True, exist_ok=True)
+    (storage_root / "faiss").mkdir(parents=True, exist_ok=True)
 
     if settings.log_file_path:
         settings.log_file_path.parent.mkdir(parents=True, exist_ok=True)
 
-    logger.debug(
-        "Runtime directories verified.",
+    logger.info(
+        "Runtime persistent directories verified.",
         extra={
             "upload_dir": str(settings.upload_dir_path),
+            "storage_dir": str(storage_root),
             "export_dir": str(settings.export_dir_path),
         },
     )
@@ -302,6 +334,7 @@ def _register_routers(app: FastAPI) -> None:
     from api.planner.routes import router as planner_router
     from api.coach.routes import router as coach_router
     from api.reports.routes import router as reports_router
+    from api.notes.router import router as notes_router
 
     app.include_router(health_router, prefix=settings.API_V1_STR)
     app.include_router(auth_router, prefix=settings.API_V1_STR)
@@ -315,6 +348,8 @@ def _register_routers(app: FastAPI) -> None:
     app.include_router(planner_router, prefix=settings.API_V1_STR)
     app.include_router(coach_router, prefix=settings.API_V1_STR)
     app.include_router(reports_router, prefix=settings.API_V1_STR)
+    app.include_router(notes_router, prefix=settings.API_V1_STR)
+
 
 
 

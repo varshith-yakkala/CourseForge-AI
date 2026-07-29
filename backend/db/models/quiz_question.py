@@ -10,11 +10,11 @@ class QuizQuestion(Base, UUIDMixin, TimestampMixin):
     quiz_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("quizzes.id", ondelete="CASCADE"), index=True)
     question_text: Mapped[str] = mapped_column(Text, nullable=False)
     question_type: Mapped[str] = mapped_column(String(20), nullable=False)
-    options = mapped_column(JSONB, nullable=True)
+    options = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=True)
     correct_answer: Mapped[str] = mapped_column(Text, nullable=False)
     explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
     difficulty: Mapped[str | None] = mapped_column(String(20), nullable=True)
     order_index: Mapped[int] = mapped_column(Integer, nullable=False)
-    source_chunk_ids = mapped_column(ARRAY(Text), nullable=True)
+    source_chunk_ids = mapped_column(JSON().with_variant(ARRAY(Text), "postgresql"), nullable=True)
 
     quiz = relationship("Quiz", back_populates="questions")

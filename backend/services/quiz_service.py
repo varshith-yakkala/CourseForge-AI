@@ -40,8 +40,18 @@ class QuizService:
         """
         Fetch or on-demand generate the Quiz and Question Pool for a lesson.
         """
+        import uuid
+        try:
+            course_uuid = uuid.UUID(course_id) if isinstance(course_id, str) else course_id
+        except ValueError:
+            course_uuid = course_id
+        try:
+            lesson_uuid = uuid.UUID(lesson_id) if isinstance(lesson_id, str) else lesson_id
+        except ValueError:
+            lesson_uuid = lesson_id
+
         # Fetch Quiz if exists
-        stmt_quiz = select(Quiz).where(Quiz.lesson_id == lesson_id)
+        stmt_quiz = select(Quiz).where(Quiz.lesson_id == lesson_uuid)
         res_quiz = await self.db.execute(stmt_quiz)
         quiz = res_quiz.scalar_one_or_none()
 
@@ -54,14 +64,14 @@ class QuizService:
                 return quiz
 
         # Fetch Lesson & Document context for quiz generation
-        stmt_lesson = select(Lesson).where(Lesson.id == lesson_id)
+        stmt_lesson = select(Lesson).where(Lesson.id == lesson_uuid)
         res_lesson = await self.db.execute(stmt_lesson)
         lesson = res_lesson.scalar_one_or_none()
 
         if not lesson:
             raise CourseForgeError("Lesson not found", status_code=404)
 
-        stmt_doc = select(Document).where(Document.course_id == course_id)
+        stmt_doc = select(Document).where(Document.course_id == course_uuid)
         res_doc = await self.db.execute(stmt_doc)
         document = res_doc.scalar_one_or_none()
 
@@ -116,8 +126,8 @@ class QuizService:
         # Create or update Quiz DB record
         if not quiz:
             quiz = Quiz(
-                course_id=course_id,
-                lesson_id=lesson_id,
+                course_id=course_uuid,
+                lesson_id=lesson_uuid,
                 title=f"Quiz: {lesson.title}",
                 pass_score_pct=70.0,
                 time_limit_min=10,
@@ -153,7 +163,12 @@ class QuizService:
         """
         Deliver a randomized subset (e.g. 10 questions) from the question pool for replayability.
         """
-        stmt = select(QuizQuestion).where(QuizQuestion.quiz_id == quiz_id)
+        import uuid
+        try:
+            quiz_uuid = uuid.UUID(quiz_id) if isinstance(quiz_id, str) else quiz_id
+        except ValueError:
+            quiz_uuid = quiz_id
+        stmt = select(QuizQuestion).where(QuizQuestion.quiz_id == quiz_uuid)
         res = await self.db.execute(stmt)
         questions = res.scalars().all()
 
@@ -180,7 +195,17 @@ class QuizService:
         Score attempt with partial credit support for short answer / scenario questions.
         Save QuizAttempt and QuizAttemptAnswer DB records.
         """
-        stmt_quiz = select(Quiz).where(Quiz.id == quiz_id)
+        import uuid
+        try:
+            quiz_uuid = uuid.UUID(quiz_id) if isinstance(quiz_id, str) else quiz_id
+        except ValueError:
+            quiz_uuid = quiz_id
+        try:
+            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+        except ValueError:
+            user_uuid = user_id
+
+        stmt_quiz = select(Quiz).where(Quiz.id == quiz_uuid)
         res_quiz = await self.db.execute(stmt_quiz)
         quiz = res_quiz.scalar_one_or_none()
 
@@ -188,7 +213,7 @@ class QuizService:
             raise CourseForgeError("Quiz not found", status_code=404)
 
         # Count previous attempts
-        stmt_prev = select(QuizAttempt).where(QuizAttempt.quiz_id == quiz_id, QuizAttempt.user_id == user_id)
+        stmt_prev = select(QuizAttempt).where(QuizAttempt.quiz_id == quiz_uuid, QuizAttempt.user_id == user_uuid)
         res_prev = await self.db.execute(stmt_prev)
         prev_attempts = res_prev.scalars().all()
         attempt_number = len(prev_attempts) + 1
@@ -196,7 +221,7 @@ class QuizService:
         now = datetime.now(timezone.utc)
         attempt = QuizAttempt(
             quiz_id=quiz.id,
-            user_id=user_id,
+            user_id=user_uuid,
             started_at=now,
             submitted_at=now,
             attempt_number=attempt_number,
@@ -213,8 +238,13 @@ class QuizService:
         earned_score_pts = 0.0
         breakdown = []
 
+        import uuid
         for q_id_str, user_ans in user_answers.items():
-            stmt_q = select(QuizQuestion).where(QuizQuestion.id == q_id_str)
+            try:
+                q_uuid = uuid.UUID(q_id_str) if isinstance(q_id_str, str) else q_id_str
+            except ValueError:
+                continue
+            stmt_q = select(QuizQuestion).where(QuizQuestion.id == q_uuid)
             res_q = await self.db.execute(stmt_q)
             q_obj = res_q.scalar_one_or_none()
 
@@ -286,3 +316,34 @@ class QuizService:
             "attempt_number": attempt_number,
             "breakdown": breakdown,
         }
+
+    async def get_quiz_attempts(self, quiz_id: str, user_id: str) -> list[dict]:
+        """Fetch previous quiz attempts for a user."""
+        import uuid
+        try:
+            quiz_uuid = uuid.UUID(quiz_id) if isinstance(quiz_id, str) else quiz_id
+            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+        except ValueError:
+            return []
+
+        stmt = (
+            select(QuizAttempt)
+            .where(QuizAttempt.quiz_id == quiz_uuid, QuizAttempt.user_id == user_uuid)
+            .order_by(QuizAttempt.attempt_number.desc())
+        )
+        res = await self.db.execute(stmt)
+        attempts = res.scalars().all()
+
+        out = []
+        for a in attempts:
+            out.append({
+                "attempt_id": str(a.id),
+                "quiz_id": str(a.quiz_id),
+                "score_pct": float(a.score_pct or 0.0),
+                "passed": a.passed or False,
+                "attempt_number": a.attempt_number,
+                "time_taken_sec": a.time_taken_sec or 0,
+                "submitted_at": a.submitted_at.isoformat() if a.submitted_at else None,
+            })
+        return out
+

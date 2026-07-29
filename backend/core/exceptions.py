@@ -31,9 +31,12 @@ class CourseForgeError(Exception):
         self,
         detail: str = "An internal error occurred.",
         *,
+        status_code: int | None = None,
         field: str | None = None,
         context: dict[str, Any] | None = None,
     ) -> None:
+        if status_code is not None:
+            self.status_code = status_code
         self.detail = detail
         self.field = field
         self.context = context or {}

@@ -12,15 +12,23 @@ from insightforge.engine import InsightForgeEngine
 logger = logging.getLogger(__name__)
 
 
-async def process_document(document_id: str) -> dict:
+async def process_document(document_id: str | uuid.UUID) -> dict:
     """Async service function to handle DB operations and document indexing synchronously."""
     from db.session import get_db_session
     from db.models.document import Document
     from sqlalchemy import select
+    import uuid
+    import traceback
+
+    try:
+        doc_uuid = uuid.UUID(document_id) if isinstance(document_id, str) else document_id
+    except ValueError:
+        doc_uuid = document_id
+    logger.info("Entering process_document(%s)", doc_uuid)
 
     async with get_db_session() as session:
         # Fetch document
-        stmt = select(Document).where(Document.id == document_id)
+        stmt = select(Document).where(Document.id == doc_uuid)
         result = await session.execute(stmt)
         doc = result.scalar_one_or_none()
 
@@ -41,13 +49,15 @@ async def process_document(document_id: str) -> dict:
             ProgressTracker.set_stage(document_id, "extracting_text", 30, "Extracting text from PDF pages")
             
             # Init InsightForge Engine
+            logger.info("Loading InsightForgeEngine for document_id=%s", document_id)
             engine = InsightForgeEngine()
             
             ProgressTracker.set_stage(document_id, "generating_embeddings", 60, "Generating SentenceTransformer embeddings")
             
             # Call adapter to index the document via thread pool to keep event loop responsive
-            logger.info(f"Indexing document {document_id} via InsightForge...")
+            logger.info("Calling engine.index_document(%s) via InsightForge...", doc.stored_path)
             index_result = await asyncio.to_thread(engine.index_document, doc.stored_path)
+            logger.info("Finished indexing for document_id=%s, chunk_count=%d", document_id, index_result.chunk_count)
 
             t_index = round((time.perf_counter() - t_start) * 1000, 2)
             ProgressTracker.record_timing(document_id, "index_creation_ms", t_index)
@@ -80,7 +90,14 @@ async def process_document(document_id: str) -> dict:
             return {"status": "success", "doc_id": document_id}
             
         except InsightForgeError as e:
-            logger.error(f"InsightForge error indexing document {document_id}: {e}", extra={"document_id": document_id, "error": str(e)})
+            logger.error(
+                "InsightForge error indexing document %s:\nType: %s\nRepr: %s\nTraceback:\n%s",
+                document_id,
+                type(e).__name__,
+                repr(e),
+                traceback.format_exc(),
+                extra={"document_id": document_id, "error": str(e)},
+            )
             doc.index_status = "error"
             session.add(doc)
             await session.commit()
@@ -88,7 +105,14 @@ async def process_document(document_id: str) -> dict:
             ProgressTracker.set_stage(document_id, "failed", 0, "Document indexing failed")
             raise
         except Exception as e:
-            logger.error(f"Unexpected error indexing document {document_id}: {e}", extra={"document_id": document_id, "error": str(e)})
+            logger.error(
+                "Unexpected error indexing document %s:\nType: %s\nRepr: %s\nTraceback:\n%s",
+                document_id,
+                type(e).__name__,
+                repr(e),
+                traceback.format_exc(),
+                extra={"document_id": document_id, "error": str(e)},
+            )
             doc.index_status = "error"
             session.add(doc)
             await session.commit()

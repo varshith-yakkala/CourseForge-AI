@@ -49,3 +49,23 @@ async def review_flashcard(
         rating_key=req.rating,
     )
     return review
+
+
+@router.get("/courses/{course_id}/flashcards/export")
+async def export_flashcards(
+    course_id: uuid.UUID,
+    format: str = Query("json", description="json or txt"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    service = FlashcardService(db)
+    content = await service.export_flashcards(
+        course_id=str(course_id),
+        format_type=format,
+    )
+    return Response(
+        content=content,
+        media_type="application/json" if format.lower() == "json" else "text/plain",
+        headers={"Content-Disposition": f'attachment; filename="flashcards.{format.lower()}"'}
+    )
+

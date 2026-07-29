@@ -60,3 +60,18 @@ async def submit_quiz_attempt(
         time_taken_sec=req.time_taken_sec,
     )
     return SubmitQuizResponse(**res)
+
+
+@router.get("/quizzes/{quiz_id}/attempts")
+async def get_quiz_attempts(
+    quiz_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    service = QuizService(db)
+    attempts = await service.get_quiz_attempts(
+        quiz_id=str(quiz_id),
+        user_id=str(current_user.id),
+    )
+    return {"attempts": attempts}
+

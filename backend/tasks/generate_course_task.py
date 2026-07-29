@@ -5,17 +5,23 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-async def generate_course(course_id: str) -> dict:
+async def generate_course(course_id: str | uuid.UUID) -> dict:
     """Async service function to generate course blueprint synchronously."""
     from db.session import get_db_session
     from db.models.course import Course
     from sqlalchemy import select
+    import uuid
     from services.course_generator import CourseGeneratorService
     from core.exceptions import CourseForgeError
 
+    try:
+        course_uuid = uuid.UUID(course_id) if isinstance(course_id, str) else course_id
+    except ValueError:
+        course_uuid = course_id
+
     async with get_db_session() as session:
         # 1. Update status to generating
-        stmt = select(Course).where(Course.id == course_id)
+        stmt = select(Course).where(Course.id == course_uuid)
         result = await session.execute(stmt)
         course = result.scalar_one_or_none()
         
@@ -37,18 +43,18 @@ async def generate_course(course_id: str) -> dict:
             return {"status": "success"}
         except CourseForgeError as e:
             logger.error(f"Failed to generate course {course_id}: {e}")
-            course.status = "error"
+            course.status = "failed"
             course.generation_error = str(e)
             session.add(course)
             await session.commit()
-            raise
+            raise CourseForgeError(detail=str(e.detail if hasattr(e, 'detail') else e), status_code=400)
         except Exception as e:
             logger.error(f"Unexpected error generating course {course_id}: {e}")
-            course.status = "error"
+            course.status = "failed"
             course.generation_error = str(e)
             session.add(course)
             await session.commit()
-            raise
+            raise CourseForgeError(detail=f"Course generation failed: {str(e)}", status_code=400)
 
 
 # Alias for backward compatibility

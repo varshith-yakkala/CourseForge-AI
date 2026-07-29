@@ -70,11 +70,37 @@ export default function FlashcardsPage() {
         <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate(-1)}>
           Back to Course
         </Button>
-        <div className="cf-fc-title-group">
-          <h1 className="cf-fc-title">Flashcard Recall</h1>
-          <p className="cf-fc-sub">Active recall powered by SuperMemo SM-2 spaced repetition.</p>
+        <div className="cf-fc-title-group" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 className="cf-fc-title">Flashcard Recall</h1>
+            <p className="cf-fc-sub">Active recall powered by SuperMemo SM-2 spaced repetition.</p>
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                const { flashcardsApi } = await import('@/api/services');
+                const blob = await flashcardsApi.exportDeck(courseId, 'json');
+                const url = window.URL.createObjectURL(new Blob([blob]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `flashcards-${courseId}.json`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+              } catch (err) {
+                console.error("Export failed:", err);
+              }
+            }}
+            style={{
+              padding: '8px 14px', borderRadius: '6px', border: '1px solid #38bdf8',
+              background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            Export Deck (JSON)
+          </button>
         </div>
       </div>
+
 
       {/* Mode Selector Tabs */}
       <div className="cf-mode-tabs">

@@ -7,7 +7,9 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 
+from pydantic import BaseModel
 from api.deps import get_current_active_user, get_db
 from core.rate_limit import limiter, _get_user_or_ip
 from api.lessons.schemas import (
@@ -39,7 +41,7 @@ async def get_lesson_detail(
     Get lesson details and content.
     If the lesson status is 'pending', automatically trigger on-demand generation.
     """
-    stmt = select(Lesson).where(Lesson.id == lesson_id, Lesson.course_id == course_id)
+    stmt = select(Lesson).options(selectinload(Lesson.topics)).where(Lesson.id == lesson_id, Lesson.course_id == course_id)
     res = await db.execute(stmt)
     lesson = res.scalar_one_or_none()
 
@@ -50,13 +52,14 @@ async def get_lesson_detail(
     if lesson.status == "pending" or not lesson.content_markdown:
         service = LessonGeneratorService(db)
         try:
-            lesson = await service.generate_lesson(str(course_id), str(lesson_id), force_regenerate=False)
+            await service.generate_lesson(str(course_id), str(lesson_id), force_regenerate=False)
         except Exception as exc:
             await db.rollback()
-            # If generation fails, return the lesson object with status="failed"
-            stmt_refreshed = select(Lesson).where(Lesson.id == lesson_id)
-            res_refreshed = await db.execute(stmt_refreshed)
-            lesson = res_refreshed.scalar_one_or_none() or lesson
+
+    # Refetch lesson with topics loaded
+    stmt_refreshed = select(Lesson).options(selectinload(Lesson.topics)).where(Lesson.id == lesson_id)
+    res_refreshed = await db.execute(stmt_refreshed)
+    lesson = res_refreshed.scalar_one()
 
     # Track last_opened_at in progress
     stmt_prog = select(UserProgress).where(
@@ -101,8 +104,10 @@ async def generate_lesson(
 ) -> Any:
     """Generate or retrieve cached lesson content."""
     service = LessonGeneratorService(db)
-    lesson = await service.generate_lesson(str(course_id), str(lesson_id), force_regenerate=False)
-    return lesson
+    await service.generate_lesson(str(course_id), str(lesson_id), force_regenerate=False)
+    stmt = select(Lesson).options(selectinload(Lesson.topics)).where(Lesson.id == lesson_id)
+    res = await db.execute(stmt)
+    return res.scalar_one()
 
 
 @router.post("/courses/{course_id}/lessons/{lesson_id}/regenerate", response_model=LessonDetailResponse)
@@ -117,8 +122,11 @@ async def regenerate_lesson(
 ) -> Any:
     """Force regenerate lesson content, incrementing lesson version."""
     service = LessonGeneratorService(db)
-    lesson = await service.generate_lesson(str(course_id), str(lesson_id), force_regenerate=True)
-    return lesson
+    await service.generate_lesson(str(course_id), str(lesson_id), force_regenerate=True)
+    stmt = select(Lesson).options(selectinload(Lesson.topics)).where(Lesson.id == lesson_id)
+    res = await db.execute(stmt)
+    return res.scalar_one()
+
 
 
 @router.post("/courses/{course_id}/lessons/{lesson_id}/progress", response_model=ProgressResponse)
@@ -228,3 +236,24 @@ async def ask_lesson_tutor(
     tutor_service = LessonTutorService(db)
     res = await tutor_service.ask_question(str(course_id), str(lesson_id), req.question)
     return AskTutorResponse(answer=res["answer"], lesson_id=lesson_id)
+
+
+class StudyAssistantRequest(BaseModel):
+    action: str # summarize, eli5, examples, interview_questions, practice_questions, key_formulas, takeaways, common_mistakes
+
+@router.post("/courses/{course_id}/lessons/{lesson_id}/study-assistant")
+@limiter.limit("60/hour", key_func=_get_user_or_ip)
+async def study_assistant_action(
+    request: Request,
+    response: Response,
+    course_id: uuid.UUID,
+    lesson_id: uuid.UUID,
+    req: StudyAssistantRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """Trigger one of the 8 AI Study Assistant quick actions on a lesson."""
+    tutor_service = LessonTutorService(db)
+    res = await tutor_service.run_quick_action(str(course_id), str(lesson_id), req.action)
+    return {"action": req.action, "answer": res["answer"], "lesson_id": lesson_id}
+

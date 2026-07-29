@@ -28,6 +28,12 @@ import {
 } from 'lucide-react';
 import './LessonViewerPage.css';
 
+import { AIStudyAssistant } from '@/components/AIStudyAssistant';
+import { NotesDrawer } from '@/components/NotesDrawer';
+import { QuizModal } from '@/components/QuizModal';
+import { AISearchModal } from '@/components/AISearchModal';
+import { HelpCircle, Highlighter, Sparkles } from 'lucide-react';
+
 export default function LessonViewerPage() {
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
@@ -47,7 +53,11 @@ export default function LessonViewerPage() {
   const regenerateLesson = useRegenerateLesson();
 
   const [isTutorOpen, setIsTutorOpen] = useState(false);
+  const [isQuizOpen, setIsQuizOpen] = useState(false);
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [startTime] = useState(Date.now());
+
 
   // Map progress entries by lesson_id for quick lookup in sidebar
   const progressMap = useMemo(() => {
@@ -217,29 +227,50 @@ export default function LessonViewerPage() {
             </div>
           )}
 
-          {/* Lifecycle State: READY (RENDER MARKDOWN) */}
-          {!lessonLoading && lesson?.status === 'ready' && lesson?.content_markdown && (
-            <div className="cf-lesson-content-grid">
-              <article className="cf-lesson-article">
-                <MarkdownViewer content={lesson.content_markdown} />
-              </article>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            <Button variant="primary" icon={HelpCircle} onClick={() => setIsQuizOpen(true)}>
+              Generate Quiz
+            </Button>
+            <Button variant="outline" icon={Highlighter} onClick={() => setIsNotesOpen(true)}>
+              Notes & Highlights
+            </Button>
+            <Button variant="secondary" icon={Sparkles} onClick={() => setIsSearchOpen(true)}>
+              Ask Course AI (Cmd+K)
+            </Button>
+          </div>
 
-              {/* Table of Contents Sidebar */}
-              {tableOfContents.length > 0 && (
-                <aside className="cf-lesson-toc">
-                  <div className="cf-toc-header">
-                    <List size={16} /> <span>Table of Contents</span>
-                  </div>
-                  <ul className="cf-toc-list">
-                    {tableOfContents.map((h, i) => (
-                      <li key={i} className="cf-toc-item">
-                        <a href={`#${h.id}`}>{h.text}</a>
-                      </li>
-                    ))}
-                  </ul>
-                </aside>
-              )}
-            </div>
+          {/* Lifecycle State: READY (RENDER MARKDOWN + AI STUDY ASSISTANT) */}
+          {!lessonLoading && lesson?.status === 'ready' && lesson?.content_markdown && (
+            <>
+              <div className="cf-lesson-content-grid">
+                <article className="cf-lesson-article">
+                  <MarkdownViewer content={lesson.content_markdown} />
+                </article>
+
+                {/* Table of Contents Sidebar */}
+                {tableOfContents.length > 0 && (
+                  <aside className="cf-lesson-toc">
+                    <div className="cf-toc-header">
+                      <List size={16} /> <span>Table of Contents</span>
+                    </div>
+                    <ul className="cf-toc-list">
+                      {tableOfContents.map((h, i) => (
+                        <li key={i} className="cf-toc-item">
+                          <a href={`#${h.id}`}>{h.text}</a>
+                        </li>
+                      ))}
+                    </ul>
+                  </aside>
+                )}
+              </div>
+
+              {/* AI Study Assistant Quick Actions */}
+              <AIStudyAssistant
+                courseId={courseId}
+                lessonId={lessonId}
+                lessonTitle={lesson?.title}
+              />
+            </>
           )}
 
           {/* Footer Navigation Controls */}
@@ -287,6 +318,29 @@ export default function LessonViewerPage() {
         lessonId={lessonId}
         lessonTitle={lesson?.title}
       />
+
+      {/* Interactive Modals & Drawers */}
+      <QuizModal
+        isOpen={isQuizOpen}
+        onClose={() => setIsQuizOpen(false)}
+        courseId={courseId}
+        lessonId={lessonId}
+        lessonTitle={lesson?.title}
+      />
+
+      <NotesDrawer
+        isOpen={isNotesOpen}
+        onClose={() => setIsNotesOpen(false)}
+        courseId={courseId}
+        lessonId={lessonId}
+      />
+
+      <AISearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        courseId={courseId}
+      />
     </div>
   );
 }
+

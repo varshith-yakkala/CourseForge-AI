@@ -25,17 +25,22 @@ class CourseGeneratorService:
         self.db = db
         self.engine = InsightForgeEngine()
         
-    async def generate_blueprint(self, course_id: str) -> dict:
+    async def generate_blueprint(self, course_id: str | uuid.UUID) -> dict:
         """Generate the Course Blueprint (Layer 1)."""
+        import uuid
+        try:
+            course_uuid = uuid.UUID(course_id) if isinstance(course_id, str) else course_id
+        except ValueError:
+            course_uuid = course_id
         # Fetch Course and Document
-        stmt = select(Course).where(Course.id == course_id)
+        stmt = select(Course).where(Course.id == course_uuid)
         result = await self.db.execute(stmt)
         course = result.scalar_one_or_none()
         
         if not course:
             raise CourseForgeError("Course not found")
             
-        stmt_doc = select(Document).where(Document.course_id == course_id)
+        stmt_doc = select(Document).where(Document.course_id == course_uuid)
         result_doc = await self.db.execute(stmt_doc)
         document = result_doc.scalar_one_or_none()
         
@@ -81,13 +86,59 @@ class CourseGeneratorService:
             
         # Parse and Validate with Pydantic
         try:
-            # Sometime LLMs wrap json in ```json ... ```
-            if "```json" in answer:
-                answer = answer.split("```json")[1].split("```")[0]
-            elif "```" in answer:
-                answer = answer.split("```")[1].split("```")[0]
-                
-            data = json.loads(answer.strip())
+            import re
+            def repair_json(s: str) -> str:
+                if "```" in s:
+                    s = s.split("```")[1]
+                    if s.startswith("json"):
+                        s = s[4:]
+                    s = s.split("```")[0]
+                s = s.strip()
+                s = re.sub(r',\s*([\]}])', r'\1', s)
+                try:
+                    json.loads(s)
+                    return s
+                except Exception:
+                    pass
+
+                in_string = False
+                escape = False
+                clean_chars = []
+                for char in s:
+                    if escape:
+                        escape = False
+                        clean_chars.append(char)
+                        continue
+                    if char == '\\':
+                        escape = True
+                        clean_chars.append(char)
+                        continue
+                    if char == '"':
+                        in_string = not in_string
+                    clean_chars.append(char)
+                if in_string:
+                    clean_chars.append('"')
+                repaired = "".join(clean_chars)
+                stack = []
+                for char in repaired:
+                    if char in '{[':
+                        stack.append(char)
+                    elif char == '}':
+                        if stack and stack[-1] == '{':
+                            stack.pop()
+                    elif char == ']':
+                        if stack and stack[-1] == '[':
+                            stack.pop()
+                while stack:
+                    top = stack.pop()
+                    if top == '{':
+                        repaired += '}'
+                    elif top == '[':
+                        repaired += ']'
+                return repaired
+
+            repaired_str = repair_json(answer)
+            data = json.loads(repaired_str)
             blueprint = CourseBlueprintResponse(**data)
         except Exception as e:
             logger.error(f"Failed to parse LLM blueprint response: {answer}")

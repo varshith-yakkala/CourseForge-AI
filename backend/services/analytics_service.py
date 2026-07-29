@@ -30,16 +30,26 @@ class AnalyticsService:
         """
         Aggregate comprehensive analytics for a user in a given course.
         """
+        import uuid
+        try:
+            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+        except ValueError:
+            user_uuid = user_id
+        try:
+            course_uuid = uuid.UUID(course_id) if isinstance(course_id, str) else course_id
+        except ValueError:
+            course_uuid = course_id
+
         # Fetch all lessons in course
-        stmt_lessons = select(Lesson).where(Lesson.course_id == course_id).order_by(Lesson.order_index)
+        stmt_lessons = select(Lesson).where(Lesson.course_id == course_uuid).order_by(Lesson.order_index)
         res_lessons = await self.db.execute(stmt_lessons)
         lessons = res_lessons.scalars().all()
         total_lessons = len(lessons)
 
         # Progress entries
         stmt_prog = select(UserProgress).where(
-            UserProgress.user_id == user_id,
-            UserProgress.course_id == course_id,
+            UserProgress.user_id == user_uuid,
+            UserProgress.course_id == course_uuid,
         )
         res_prog = await self.db.execute(stmt_prog)
         progress_records = res_prog.scalars().all()
@@ -49,7 +59,7 @@ class AnalyticsService:
         overall_progress_pct = round((completed_lessons / total_lessons * 100), 1) if total_lessons > 0 else 0.0
 
         # Quiz attempts
-        stmt_quizzes = select(Quiz).where(Quiz.course_id == course_id)
+        stmt_quizzes = select(Quiz).where(Quiz.course_id == course_uuid)
         res_quizzes = await self.db.execute(stmt_quizzes)
         quizzes = res_quizzes.scalars().all()
         quiz_ids = [q.id for q in quizzes]
@@ -58,7 +68,7 @@ class AnalyticsService:
         passed_quizzes = 0
         if quiz_ids:
             stmt_att = select(QuizAttempt).where(
-                QuizAttempt.user_id == user_id,
+                QuizAttempt.user_id == user_uuid,
                 QuizAttempt.quiz_id.in_(quiz_ids)
             )
             res_att = await self.db.execute(stmt_att)
@@ -73,7 +83,7 @@ class AnalyticsService:
         avg_quiz_score = round(sum(quiz_scores) / len(quiz_scores), 1) if quiz_scores else 0.0
 
         # Flashcards & Mastery
-        stmt_cards = select(Flashcard).where(Flashcard.course_id == course_id)
+        stmt_cards = select(Flashcard).where(Flashcard.course_id == course_uuid)
         res_cards = await self.db.execute(stmt_cards)
         cards = res_cards.scalars().all()
         card_ids = [c.id for c in cards]
@@ -84,7 +94,7 @@ class AnalyticsService:
             now = datetime.now(timezone.utc)
             for card in cards:
                 stmt_rev = select(FlashcardReview).where(
-                    FlashcardReview.user_id == user_id,
+                    FlashcardReview.user_id == user_uuid,
                     FlashcardReview.flashcard_id == card.id
                 ).order_by(FlashcardReview.reviewed_at.desc())
                 res_rev = await self.db.execute(stmt_rev)
@@ -102,7 +112,7 @@ class AnalyticsService:
         if quiz_ids:
             for quiz in quizzes:
                 stmt_att_q = select(QuizAttempt).where(
-                    QuizAttempt.user_id == user_id,
+                    QuizAttempt.user_id == user_uuid,
                     QuizAttempt.quiz_id == quiz.id
                 ).order_by(QuizAttempt.submitted_at.desc())
                 res_att_q = await self.db.execute(stmt_att_q)

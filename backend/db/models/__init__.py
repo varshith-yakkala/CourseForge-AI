@@ -21,5 +21,9 @@ from .certificate import Certificate
 from .achievement import UserAchievement
 from .study_plan import StudyPlan
 from .weekly_report import WeeklyReport
+from .note import Note
+from .workspace_artifact import WorkspaceArtifact
+from .topic_mastery import TopicMastery
+from .study_session import StudySession
 
 

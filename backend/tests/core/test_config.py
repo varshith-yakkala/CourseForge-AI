@@ -16,7 +16,7 @@ def test_missing_required_secrets(monkeypatch):
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     
     with pytest.raises(ValidationError) as exc:
-        Settings()
+        Settings(_env_file=None)
     
     errors = str(exc.value)
     assert "app_secret_key" in errors.lower()
