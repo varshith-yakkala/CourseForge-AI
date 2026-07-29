@@ -28,7 +28,11 @@ export default function DashboardPage() {
           ))}
         </div>
       ) : isError ? (
-        <EmptyState title="Error loading dashboard" description="Failed to load your courses." />
+        <EmptyState
+          title="Error loading dashboard"
+          description="Failed to load your courses. Please check your connection or log in again."
+          action={<Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>}
+        />
       ) : courses && courses.length > 0 ? (
         <div>
           <h2 className="text-heading-md" style={{ marginBottom: 'var(--space-4)' }}>Recent Courses</h2>
