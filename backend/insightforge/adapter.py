@@ -53,72 +53,17 @@ class InsightForgeAdapter:
 
     def _initialize_rag_service(self) -> Any:
         """
-        Import InsightForge RAGService and initialize it.
-        Robustly handles deployment environments and local dev setups without namespace collisions.
+        Import integrated InsightForge RAGService directly.
+        No external dependencies, paths, or environment variables required.
         """
         try:
-            path_to_check: Path | None = None
-            if settings.INSIGHTFORGE_PATH:
-                cand = Path(settings.INSIGHTFORGE_PATH).resolve()
-                if cand.exists():
-                    path_to_check = cand
-
-            if not path_to_check:
-                current_file = Path(__file__).resolve()
-                for parent in current_file.parents:
-                    candidate_paths = [
-                        parent / "aiforage" / "InsightForge-AI",
-                        parent / "InsightForge-AI",
-                    ]
-                    for cand in candidate_paths:
-                        if cand.exists():
-                            path_to_check = cand
-                            break
-                    if path_to_check:
-                        break
-
-            RAGService = None
-
-            if path_to_check and path_to_check.exists():
-                insight_root = str(path_to_check.resolve())
-                insight_backend = str((path_to_check / "backend").resolve())
-
-                if insight_root not in sys.path:
-                    sys.path.append(insight_root)
-
-                import backend as cb_backend
-                if hasattr(cb_backend, "__path__") and insight_backend not in cb_backend.__path__:
-                    cb_backend.__path__.append(insight_backend)
-
-                try:
-                    from backend.services.rag_service import RAGService  # type: ignore[import]
-                except ImportError:
-                    pass
-
-            if RAGService is None:
-                try:
-                    from services.rag_service import RAGService  # type: ignore[import]
-                except ImportError:
-                    pass
-
-            if RAGService is None and path_to_check:
-                rag_file = path_to_check / "backend" / "services" / "rag_service.py"
-                if rag_file.exists():
-                    import importlib.util
-                    spec = importlib.util.spec_from_file_location("insightforge_rag_service", str(rag_file))
-                    if spec and spec.loader:
-                        mod = importlib.util.module_from_spec(spec)
-                        spec.loader.exec_module(mod)
-                        RAGService = getattr(mod, "RAGService", None)
-
-            if RAGService is None:
-                raise ImportError(
-                    "Could not locate RAGService in external InsightForge directory or python path. "
-                    "Verify INSIGHTFORGE_PATH environment variable."
-                )
+            try:
+                from backend.insightforge.services.rag_service import RAGService
+            except ImportError:
+                from insightforge.services.rag_service import RAGService
 
             rag = RAGService()
-            logger.info("InsightForge RAGService loaded successfully.")
+            logger.info("Integrated InsightForge RAGService loaded successfully.")
             return rag
 
         except Exception as exc:

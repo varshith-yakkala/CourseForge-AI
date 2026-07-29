@@ -35,6 +35,8 @@ yarn-error.log*
 uploads/
 *.db
 *.sqlite3
+backend/storage/
+storage/
 
 # IDEs
 .idea/

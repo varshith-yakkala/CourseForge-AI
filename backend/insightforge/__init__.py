@@ -16,3 +16,11 @@ Usage:
     engine = InsightForgeEngine()
     result = engine.query("What is machine learning?", doc_ids=["abc-123"])
 """
+import sys
+
+# Ensure backend.insightforge module alias resolves cleanly regardless of working directory
+current_mod = sys.modules.get(__name__)
+if current_mod:
+    sys.modules.setdefault("backend.insightforge", current_mod)
+    sys.modules.setdefault("insightforge", current_mod)
+
