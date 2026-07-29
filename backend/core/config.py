@@ -350,30 +350,50 @@ class Settings(BaseSettings):
         os.environ.setdefault("USE_TORCH", "1")
 
         # Ensure CourseForge backend root is FIRST on sys.path
-        courseforge_backend = str(Path(__file__).resolve().parent.parent)
+        current_file = Path(__file__).resolve()
+        courseforge_backend = str(current_file.parent.parent)
         if courseforge_backend in sys.path:
             sys.path.remove(courseforge_backend)
         sys.path.insert(0, courseforge_backend)
 
         path_to_check: Path | None = None
+
+        # 1. Use INSIGHTFORGE_PATH environment variable if provided
         if self.INSIGHTFORGE_PATH:
-            path_to_check = Path(self.INSIGHTFORGE_PATH)
-        else:
-            # Check candidate paths for local development
-            candidates = [
-                Path(__file__).resolve().parents[3] / "aiforage" / "InsightForge-AI",
-                Path(__file__).resolve().parents[3] / "InsightForge-AI",
-                Path("../../aiforage/InsightForge-AI").resolve(),
-            ]
-            for cand in candidates:
-                if cand.exists():
-                    path_to_check = cand
+            try:
+                candidate = Path(self.INSIGHTFORGE_PATH).resolve()
+                if candidate.exists():
+                    path_to_check = candidate
+                else:
+                    logger.warning("INSIGHTFORGE_PATH is set to '%s' but path does not exist.", self.INSIGHTFORGE_PATH)
+            except Exception as e:
+                logger.warning("Failed to resolve INSIGHTFORGE_PATH '%s': %s", self.INSIGHTFORGE_PATH, e)
+
+        # 2. If not found via env var, safely inspect parents of current file to locate project root
+        if not path_to_check:
+            for parent in current_file.parents:
+                candidate_paths = [
+                    parent / "aiforage" / "InsightForge-AI",
+                    parent / "InsightForge-AI",
+                ]
+                for cand in candidate_paths:
+                    try:
+                        if cand.exists():
+                            path_to_check = cand
+                            break
+                    except Exception:
+                        pass
+                if path_to_check:
                     break
 
         if path_to_check and path_to_check.exists():
             insight_path = str(path_to_check.resolve())
             if insight_path not in sys.path:
                 sys.path.append(insight_path)
+                logger.info("Added InsightForge-AI directory to sys.path: %s", insight_path)
+        else:
+            logger.info("External InsightForge-AI path not found. Using bundled internal adapter.")
+
         return self
 
 
