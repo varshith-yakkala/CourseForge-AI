@@ -199,23 +199,41 @@ def create_app() -> FastAPI:
 
 
 def _register_exception_handlers(app: FastAPI) -> None:
-    """Register global exception handlers for consistent JSON error responses."""
+    """Register global exception handlers for consistent JSON error responses and comprehensive diagnostic logging."""
+    import traceback
+
+    def _extract_diag(exc: Exception, request: Request):
+        tb_str = traceback.format_exc()
+        tb_list = traceback.extract_tb(exc.__traceback__)
+        filename = tb_list[-1].filename if tb_list else "unknown"
+        lineno = tb_list[-1].lineno if tb_list else 0
+        func_name = tb_list[-1].name if tb_list else "unknown"
+        req_id = getattr(getattr(request, "state", None), "request_id", None) or request.headers.get("X-Request-ID", "N/A")
+        msg = str(getattr(exc, "detail", str(exc)))
+        return {
+            "type": type(exc).__name__,
+            "message": msg,
+            "traceback": tb_str,
+            "filename": filename,
+            "lineno": lineno,
+            "function": func_name,
+            "path": request.url.path,
+            "request_id": req_id,
+        }
 
     @app.exception_handler(RateLimitExceeded)
     async def rate_limit_handler(
         request: Request, exc: RateLimitExceeded
     ) -> JSONResponse:
-        """Return HTTP 429 with Retry-After header when rate limit is exceeded."""
         retry_after = getattr(exc, "retry_after", None)
         headers = {}
         if retry_after is not None:
             headers["Retry-After"] = str(retry_after)
+        diag = _extract_diag(exc, request)
         logger.warning(
-            "Rate limit exceeded",
-            extra={
-                "path": request.url.path,
-                "client_ip": request.headers.get("X-Forwarded-For", getattr(request.client, "host", "unknown")),
-            },
+            "Rate limit exceeded on %s (RequestID: %s):\nFile: %s (Line %s)\nMessage: %s",
+            diag["path"], diag["request_id"], diag["filename"], diag["lineno"], diag["message"],
+            extra=diag,
         )
         return JSONResponse(
             status_code=429,
@@ -230,12 +248,13 @@ def _register_exception_handlers(app: FastAPI) -> None:
     async def validation_exception_handler(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
-        logger.warning(
-            "Request validation error",
-            extra={"path": request.url.path},
-        )
-        # Ensure we do not leak internal system details via raw Pydantic errors
+        diag = _extract_diag(exc, request)
         formatted_errors = [{"loc": err.get("loc"), "msg": err.get("msg"), "type": err.get("type")} for err in exc.errors()]
+        logger.warning(
+            "Request validation error on %s %s (RequestID: %s):\nFile: %s (Line %s)\nErrors: %s",
+            request.method, diag["path"], diag["request_id"], diag["filename"], diag["lineno"], formatted_errors,
+            extra=diag,
+        )
         return JSONResponse(
             status_code=422,
             content={
@@ -249,13 +268,19 @@ def _register_exception_handlers(app: FastAPI) -> None:
     async def courseforge_exception_handler(
         request: Request, exc: CourseForgeError
     ) -> JSONResponse:
-        logger.warning(
-            "Application error",
-            extra={
-                "code": exc.code,
-                "detail": exc.detail,
-                "path": request.url.path,
-            },
+        diag = _extract_diag(exc, request)
+        logger.error(
+            "Application error on %s %s (RequestID: %s):\nType: %s\nMessage: %s\nFile: %s:%s (in %s)\nTraceback:\n%s",
+            request.method,
+            diag["path"],
+            diag["request_id"],
+            diag["type"],
+            diag["message"],
+            diag["filename"],
+            diag["lineno"],
+            diag["function"],
+            diag["traceback"],
+            extra=diag,
         )
         return JSONResponse(
             status_code=exc.status_code,
@@ -266,24 +291,27 @@ def _register_exception_handlers(app: FastAPI) -> None:
     async def unhandled_exception_handler(
         request: Request, exc: Exception
     ) -> JSONResponse:
-        import traceback
-        tb_str = traceback.format_exc()
+        diag = _extract_diag(exc, request)
         logger.error(
-            "Unhandled exception on %s %s:\nType: %s\nMessage: %s\nTraceback:\n%s",
+            "Unhandled exception on %s %s (RequestID: %s):\nType: %s\nMessage: %s\nFile: %s:%s (in %s)\nTraceback:\n%s",
             request.method,
-            request.url.path,
-            type(exc).__name__,
-            str(exc),
-            tb_str,
-            extra={"path": request.url.path, "exception_type": type(exc).__name__},
+            diag["path"],
+            diag["request_id"],
+            diag["type"],
+            diag["message"],
+            diag["filename"],
+            diag["lineno"],
+            diag["function"],
+            diag["traceback"],
+            extra=diag,
         )
         content = {
             "detail": "An unexpected error occurred. Please try again.",
             "code": "INTERNAL_ERROR",
         }
         if settings.APP_DEBUG:
-            content["debug_message"] = f"{type(exc).__name__}: {str(exc)}"
-            content["traceback"] = tb_str.splitlines()
+            content["debug_message"] = f"{diag['type']}: {diag['message']}"
+            content["traceback"] = diag["traceback"].splitlines()
         return JSONResponse(
             status_code=500,
             content=content,

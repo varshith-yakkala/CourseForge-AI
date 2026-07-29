@@ -1,5 +1,6 @@
 import uuid
-from sqlalchemy import BigInteger, ForeignKey, Integer, String, Text, DateTime
+from datetime import datetime, timezone
+from sqlalchemy import BigInteger, ForeignKey, Integer, String, Text, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from db.base import Base, UUIDMixin
 
@@ -16,7 +17,12 @@ class Document(Base, UUIDMixin):
     insightforge_doc_id: Mapped[str | None] = mapped_column(String(255), index=True, nullable=True)
     index_status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False)
     chunk_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    indexed_at = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at = mapped_column(DateTime(timezone=True), nullable=False)
+    indexed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        server_default=func.now(),
+        nullable=False,
+    )
 
     course = relationship("Course", back_populates="document")
