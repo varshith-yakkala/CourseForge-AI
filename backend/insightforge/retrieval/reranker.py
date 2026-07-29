@@ -1,23 +1,18 @@
-from sentence_transformers import CrossEncoder
-
-
 class CrossEncoderReranker:
 
     _model = None
 
     def __init__(self):
+        pass
 
-        if CrossEncoderReranker._model is None:
-
-            print("Loading CrossEncoder...")
-
-            CrossEncoderReranker._model = CrossEncoder(
-                "cross-encoder/ms-marco-MiniLM-L-6-v2"
-            )
-
+    @classmethod
+    def get_model(cls):
+        if cls._model is None:
+            print("Loading CrossEncoder lazily...")
+            from sentence_transformers import CrossEncoder
+            cls._model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
             print("CrossEncoder loaded.")
-
-        self.model = CrossEncoderReranker._model
+        return cls._model
 
     def rerank(
         self,
@@ -42,7 +37,8 @@ class CrossEncoderReranker:
                 )
             )
 
-        scores = self.model.predict(
+        model = self.get_model()
+        scores = model.predict(
             pairs
         )
 

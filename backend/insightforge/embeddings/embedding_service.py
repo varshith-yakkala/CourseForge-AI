@@ -1,5 +1,3 @@
-from sentence_transformers import SentenceTransformer
-
 from backend.insightforge.chunking.models.chunk import Chunk
 from backend.insightforge.embeddings.models.embedding import Embedding
 
@@ -9,19 +7,20 @@ class EmbeddingService:
     _model = None
 
     def __init__(self):
+        pass
 
-        if EmbeddingService._model is None:
-            print("Loading embedding model...")
-            EmbeddingService._model = SentenceTransformer(
-                "sentence-transformers/all-MiniLM-L6-v2"
-            )
+    @classmethod
+    def get_model(cls):
+        if cls._model is None:
+            print("Loading embedding model lazily...")
+            from sentence_transformers import SentenceTransformer
+            cls._model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
             print("Embedding model loaded.")
-
-        self.model = EmbeddingService._model
+        return cls._model
 
     def embed(self, text: str):
-
-        return self.model.encode(
+        model = self.get_model()
+        return model.encode(
             text,
             convert_to_numpy=True
         ).tolist()
