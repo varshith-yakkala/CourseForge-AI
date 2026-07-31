@@ -16,17 +16,36 @@ Key design: prompt_override
     InsightForge's QueryPipeline uses its own PromptBuilder. CourseForge has a
     PromptManager with versioned, purpose-specific prompts. When prompt_override
     is provided, we call GeminiGenerator.generate() directly, bypassing PromptBuilder.
-"""
+"""InsightForge RAG Service Adapter for CourseForge AI.
 
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
 from core.config import settings
 from core.exceptions import InsightForgeError
+
+# Alias backend.insightforge submodules in sys.modules so legacy pickled metadata unpickles seamlessly
+try:
+    import insightforge
+    sys.modules["backend.insightforge"] = insightforge
+    import insightforge.chunking as _chunking
+    sys.modules["backend.insightforge.chunking"] = _chunking
+    import insightforge.chunking.models.chunk as _chunk_mod
+    sys.modules["backend.insightforge.chunking.models.chunk"] = _chunk_mod
+    import insightforge.embeddings as _embeddings
+    sys.modules["backend.insightforge.embeddings"] = _embeddings
+    import insightforge.embeddings.models.embedding as _emb_mod
+    sys.modules["backend.insightforge.embeddings.models.embedding"] = _emb_mod
+    import insightforge.storage as _storage
+    sys.modules["backend.insightforge.storage"] = _storage
+except Exception as _alias_err:
+    pass
+
 from insightforge.engine import ChunkResult, IndexResult, QueryResult
 
 logger = logging.getLogger(__name__)
