@@ -16,7 +16,7 @@ Key design: prompt_override
     InsightForge's QueryPipeline uses its own PromptBuilder. CourseForge has a
     PromptManager with versioned, purpose-specific prompts. When prompt_override
     is provided, we call GeminiGenerator.generate() directly, bypassing PromptBuilder.
-"""InsightForge RAG Service Adapter for CourseForge AI.
+"""
 
 from __future__ import annotations
 
