@@ -315,9 +315,10 @@ class InsightForgeAdapter:
 
     def health_check(self) -> dict[str, str]:
         """Return InsightForge component status."""
+        reason = f"Initialization error: {type(self._init_error).__name__}: {self._init_error}" if self._init_error else "RAGService not loaded"
         return {
             "status": "healthy" if self._rag else "degraded",
-            "detail": None if self._rag else "InsightForge external RAG service not loaded",
+            "detail": None if self._rag else reason,
             "embedding_model": settings.EMBEDDING_MODEL,
             "llm_model": settings.GROQ_MODEL,
         }
