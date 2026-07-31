@@ -103,7 +103,7 @@ async def process_document(document_id: str | uuid.UUID) -> dict:
             session.add(doc)
             await session.commit()
             from core.progress import ProgressTracker
-            ProgressTracker.set_stage(document_id, "failed", 0, "Document indexing failed")
+            ProgressTracker.set_stage(document_id, "failed", 0, f"Document indexing failed: {type(e).__name__}: {str(e)}")
             raise
         except Exception as e:
             logger.error(
@@ -118,7 +118,7 @@ async def process_document(document_id: str | uuid.UUID) -> dict:
             session.add(doc)
             await session.commit()
             from core.progress import ProgressTracker
-            ProgressTracker.set_stage(document_id, "failed", 0, "An unexpected error occurred during indexing")
+            ProgressTracker.set_stage(document_id, "failed", 0, f"Unexpected error: {type(e).__name__}: {str(e)}")
             raise
 
 

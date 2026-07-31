@@ -6,16 +6,15 @@ from ...chunking.models.chunk import Chunk
 
 class ChunkStore:
 
-    def __init__(self):
-
-        self.root = Path(
-            "backend/storage/data/chunks"
-        )
-
-        self.root.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
+    def __init__(self, data_dir: str | Path | None = None):
+        if data_dir is None:
+            try:
+                from core.config import settings
+                data_dir = settings.storage_dir_path / "chunks"
+            except Exception:
+                data_dir = Path(__file__).resolve().parent.parent / "data" / "chunks"
+        self.root = Path(data_dir)
+        self.root.mkdir(parents=True, exist_ok=True)
 
     def save_chunks(
         self,

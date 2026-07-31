@@ -18,7 +18,7 @@ class StorageManager:
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
         self.registry = DocumentRegistry(self.data_dir / "documents.json")
-        self.chunk_store = ChunkStore()
+        self.chunk_store = ChunkStore(self.data_dir / "chunks")
 
     def save_chunks(self, document_id: str, chunks: list):
         self.chunk_store.save_chunks(document_id, chunks)
