@@ -1,9 +1,9 @@
 import uuid
 from typing import List
 
-from backend.insightforge.chunking.chunkers.base_chunker import BaseChunker
-from backend.insightforge.chunking.models.chunk import Chunk
-from backend.insightforge.ingestion.models.document import Document
+from .base_chunker import BaseChunker
+from ..models.chunk import Chunk
+from ...ingestion.models.document import Document
 
 
 class RecursiveChunker(BaseChunker):

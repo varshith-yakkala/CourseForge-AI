@@ -1,5 +1,5 @@
-from backend.insightforge.pipelines.indexing_pipeline import IndexingPipeline
-from backend.insightforge.pipelines.query_pipeline import QueryPipeline
+from ..pipelines.indexing_pipeline import IndexingPipeline
+from ..pipelines.query_pipeline import QueryPipeline
 
 
 class RAGService:

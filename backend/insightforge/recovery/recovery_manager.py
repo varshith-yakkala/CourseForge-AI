@@ -1,6 +1,6 @@
-from backend.insightforge.retrieval.faiss_store import FAISSStore
-from backend.insightforge.retrieval.bm25 import BM25Retriever
-from backend.insightforge.storage.storage_manager import StorageManager
+from ..retrieval.faiss_store import FAISSStore
+from ..retrieval.bm25 import BM25Retriever
+from ..storage.storage_manager import StorageManager
 
 
 class RecoveryManager:

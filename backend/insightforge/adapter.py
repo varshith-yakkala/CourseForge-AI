@@ -57,10 +57,7 @@ class InsightForgeAdapter:
         No external dependencies, paths, or environment variables required.
         """
         try:
-            try:
-                from backend.insightforge.services.rag_service import RAGService
-            except ImportError:
-                from insightforge.services.rag_service import RAGService
+            from .services.rag_service import RAGService
 
             rag = RAGService()
             logger.info("Integrated InsightForge RAGService loaded successfully.")
@@ -175,9 +172,9 @@ class InsightForgeAdapter:
         3. Call GeminiGenerator.generate() with our prompt
         """
         try:
-            from backend.insightforge.retrieval.hybrid_retriever import HybridRetriever
-            from backend.insightforge.llm.generator import GeminiGenerator
-            from backend.insightforge.retrieval.confidence import ConfidenceEstimator
+            from .retrieval.hybrid_retriever import HybridRetriever
+            from .llm.generator import GeminiGenerator
+            from .retrieval.confidence import ConfidenceEstimator
             import time
 
             start = time.time()

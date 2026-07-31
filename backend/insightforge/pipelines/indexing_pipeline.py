@@ -1,16 +1,16 @@
 from pathlib import Path
 
-from backend.insightforge.chunking.chunkers.character_chunker import CharacterChunker
-from backend.insightforge.embeddings.embedding_service import EmbeddingService
-from backend.insightforge.ingestion.loaders.loader_factory import LoaderFactory
-from backend.insightforge.recovery.recovery_manager import RecoveryManager
-from backend.insightforge.retrieval.faiss_store import FAISSStore
-from backend.insightforge.retrieval.bm25 import BM25Retriever
-from backend.insightforge.retrieval.retriever import Retriever
-from backend.insightforge.retrieval.hybrid_retriever import HybridRetriever
+from ..chunking.chunkers.character_chunker import CharacterChunker
+from ..embeddings.embedding_service import EmbeddingService
+from ..ingestion.loaders.loader_factory import LoaderFactory
+from ..recovery.recovery_manager import RecoveryManager
+from ..retrieval.faiss_store import FAISSStore
+from ..retrieval.bm25 import BM25Retriever
+from ..retrieval.retriever import Retriever
+from ..retrieval.hybrid_retriever import HybridRetriever
 
-from backend.insightforge.storage.storage_manager import StorageManager
-from backend.insightforge.storage.models.indexed_document import IndexedDocument
+from ..storage.storage_manager import StorageManager
+from ..storage.models.indexed_document import IndexedDocument
 
 
 class IndexingPipeline:

@@ -1,11 +1,11 @@
 import time
 
-from backend.insightforge.llm.generator import GeminiGenerator
-from backend.insightforge.llm.prompt_builder import PromptBuilder
+from ..llm.generator import GeminiGenerator
+from ..llm.prompt_builder import PromptBuilder
 
-from backend.insightforge.retrieval.reranker import CrossEncoderReranker
-from backend.insightforge.retrieval.context_compressor import ContextCompressor
-from backend.insightforge.retrieval.confidence import ConfidenceEstimator
+from ..retrieval.reranker import CrossEncoderReranker
+from ..retrieval.context_compressor import ContextCompressor
+from ..retrieval.confidence import ConfidenceEstimator
 
 
 class QueryPipeline:

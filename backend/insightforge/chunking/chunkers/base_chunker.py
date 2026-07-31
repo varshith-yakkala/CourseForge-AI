@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from backend.insightforge.ingestion.models.document import Document
-from backend.insightforge.chunking.models.chunk import Chunk
+from ...ingestion.models.document import Document
+from ..models.chunk import Chunk
 
 
 class BaseChunker(ABC):
