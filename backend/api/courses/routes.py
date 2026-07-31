@@ -143,6 +143,8 @@ async def start_course_generation(
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
     """Start the asynchronous course generation pipeline."""
+    from db.models.document import Document
+
     stmt = select(Course).where(
         Course.id == course_id,
         Course.owner_id == current_user.id,
@@ -156,7 +158,30 @@ async def start_course_generation(
         
     if course.status in ["generating_outline", "generating_lessons"]:
         raise HTTPException(status_code=400, detail="Course is already generating")
-        
+
+    # Pre-flight: verify a ready document exists before starting generation.
+    # This returns a clear 400 with JSON body instead of a silent 500.
+    stmt_doc = select(Document).where(Document.course_id == course_id)
+    result_doc = await db.execute(stmt_doc)
+    document = result_doc.scalar_one_or_none()
+
+    if not document:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "No document has been uploaded to this course yet. "
+                "Upload a PDF first, wait for indexing to complete, then generate."
+            ),
+        )
+    if document.index_status != "ready":
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Document is not ready for generation (current status: '{document.index_status}'). "
+                "Wait for indexing to complete before generating."
+            ),
+        )
+
     course.status = "generating_outline"
     course.generation_error = None
     db.add(course)
@@ -168,7 +193,17 @@ async def start_course_generation(
     t_start = time.perf_counter()
 
     from tasks.generate_course_task import generate_course
-    await generate_course(str(course.id))
+    try:
+        await generate_course(str(course.id))
+    except Exception as exc:
+        # generate_course already sets course.status = "failed" and logs the error.
+        # Refresh from DB so we return the final state.
+        await db.refresh(course)
+        raise HTTPException(
+            status_code=400,
+            detail=str(getattr(exc, "detail", None) or exc),
+        ) from exc
+
     await db.refresh(course)
 
     t_total = round((time.perf_counter() - t_start) * 1000, 2)
@@ -176,6 +211,7 @@ async def start_course_generation(
     response.headers["X-Processing-Time-ms"] = str(t_total)
     
     return course
+
 
 
 @router.get("/{course_id}/progress")

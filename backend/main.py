@@ -74,6 +74,25 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.error("Failed to initialize InsightForgeEngine singleton during app startup: %s", exc, exc_info=True)
 
+    # Pre-warm the SentenceTransformer model in the background.
+    # On Render free tier the model (~80 MB) must be downloaded from HuggingFace Hub
+    # on the first use.  Doing this at startup means the first PDF upload won't
+    # trigger a cold download inside asyncio.wait_for() and fail with TimeoutError.
+    async def _warmup_embedding_model() -> None:
+        try:
+            logger.info("Pre-warming SentenceTransformer embedding model...")
+            from insightforge.embeddings.embedding_service import EmbeddingService
+            await asyncio.to_thread(EmbeddingService.get_model)
+            logger.info("SentenceTransformer embedding model pre-warm complete.")
+        except Exception as _wup_exc:
+            logger.warning(
+                "Embedding model pre-warm failed (will retry on first upload): %s",
+                _wup_exc,
+            )
+
+    import asyncio as _asyncio
+    _asyncio.ensure_future(_warmup_embedding_model())
+
     for route in app.routes:
         methods = getattr(route, "methods", None)
         methods_str = ", ".join(sorted(methods)) if methods else "ALL"

@@ -55,9 +55,38 @@ async def process_document(document_id: str | uuid.UUID) -> dict:
             
             ProgressTracker.set_stage(document_id, "generating_embeddings", 60, "Generating SentenceTransformer embeddings")
             
-            # Call adapter to index the document via thread pool to keep event loop responsive
-            logger.info("Calling engine.index_document(%s) via InsightForge...", doc.stored_path)
-            index_result = await asyncio.to_thread(engine.index_document, doc.stored_path)
+            # Run indexing in a thread pool with a hard timeout.
+            # The first-ever call may take 60-120s on Render free tier because
+            # SentenceTransformer (all-MiniLM-L6-v2, ~80 MB) must be downloaded
+            # from HuggingFace Hub. Subsequent calls are fast (model is cached).
+            # Without a timeout, a hung thread leaves status=processing forever.
+            INDEXING_TIMEOUT_SECONDS = 300  # 5 minutes: generous for first cold download
+            logger.info(
+                "Calling engine.index_document(%s) via thread pool (timeout=%ds)...",
+                doc.stored_path,
+                INDEXING_TIMEOUT_SECONDS,
+            )
+            try:
+                index_result = await asyncio.wait_for(
+                    asyncio.to_thread(engine.index_document, doc.stored_path),
+                    timeout=INDEXING_TIMEOUT_SECONDS,
+                )
+            except asyncio.TimeoutError:
+                elapsed = round(time.perf_counter() - t_start, 1)
+                msg = (
+                    f"Document indexing timed out after {elapsed}s "
+                    f"(limit={INDEXING_TIMEOUT_SECONDS}s). "
+                    "This usually means the SentenceTransformer model is still downloading "
+                    "on a cold Render instance. Re-upload after 2-3 minutes to retry "
+                    "once the model is cached."
+                )
+                logger.error("Indexing timeout for document_id=%s: %s", document_id, msg)
+                doc.index_status = "error"
+                session.add(doc)
+                await session.commit()
+                ProgressTracker.set_stage(document_id, "failed", 0, msg)
+                return {"status": "error", "message": msg}
+
             logger.info("Finished indexing for document_id=%s, chunk_count=%d", document_id, index_result.chunk_count)
 
             t_index = round((time.perf_counter() - t_start) * 1000, 2)
@@ -79,25 +108,17 @@ async def process_document(document_id: str | uuid.UUID) -> dict:
             ProgressTracker.set_stage(document_id, "completed", 100, "Document indexed successfully")
             
             logger.info(
-                f"Successfully indexed document {document_id}",
-                extra={
-                    "document_id": document_id,
-                    "chunk_count": index_result.chunk_count,
-                    "index_creation_ms": t_index,
-                    "db_write_ms": t_db,
-                    "status": "ready"
-                }
+                "Successfully indexed document %s in %.0fms (chunks=%d)",
+                document_id,
+                t_index,
+                index_result.chunk_count,
             )
             return {"status": "success", "doc_id": document_id}
             
         except InsightForgeError as e:
-            logger.error(
-                "InsightForge error indexing document %s:\nType: %s\nRepr: %s\nTraceback:\n%s",
+            logger.exception(
+                "InsightForge error indexing document %s",
                 document_id,
-                type(e).__name__,
-                repr(e),
-                traceback.format_exc(),
-                extra={"document_id": document_id, "error": str(e)},
             )
             doc.index_status = "error"
             session.add(doc)
@@ -106,13 +127,9 @@ async def process_document(document_id: str | uuid.UUID) -> dict:
             ProgressTracker.set_stage(document_id, "failed", 0, f"Document indexing failed: {type(e).__name__}: {str(e)}")
             raise
         except Exception as e:
-            logger.error(
-                "Unexpected error indexing document %s:\nType: %s\nRepr: %s\nTraceback:\n%s",
+            logger.exception(
+                "Unexpected error indexing document %s",
                 document_id,
-                type(e).__name__,
-                repr(e),
-                traceback.format_exc(),
-                extra={"document_id": document_id, "error": str(e)},
             )
             doc.index_status = "error"
             session.add(doc)
