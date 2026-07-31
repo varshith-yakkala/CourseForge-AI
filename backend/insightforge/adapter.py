@@ -74,20 +74,27 @@ class InsightForgeAdapter:
             )
             return None
 
+    def get_rag(self) -> Any:
+        if self._rag is None:
+            logger.info("Retrying InsightForge RAGService initialization...")
+            self._rag = self._initialize_rag_service()
+        return self._rag
+
     # ─────────────────────────────────────────────
     # Index
     # ─────────────────────────────────────────────
 
     def index_document(self, file_path: str) -> IndexResult:
         """Wrap InsightForge RAGService.load_document()."""
-        if not self._rag:
+        rag = self.get_rag()
+        if not rag:
             err_msg = UNAVAILABLE_ERROR_MSG
             if self._init_error:
                 err_msg += f" (Root Cause: {type(self._init_error).__name__}: {self._init_error})"
             raise InsightForgeError(err_msg) from self._init_error
 
         try:
-            result = self._rag.load_document(file_path)
+            result = rag.load_document(file_path)
 
             return IndexResult(
                 doc_id=result["document"]["id"] if result.get("document") else "",
@@ -315,10 +322,11 @@ class InsightForgeAdapter:
 
     def health_check(self) -> dict[str, str]:
         """Return InsightForge component status."""
+        rag = self.get_rag()
         reason = f"Initialization error: {type(self._init_error).__name__}: {self._init_error}" if self._init_error else "RAGService not loaded"
         return {
-            "status": "healthy" if self._rag else "degraded",
-            "detail": None if self._rag else reason,
+            "status": "healthy" if rag else "degraded",
+            "detail": None if rag else reason,
             "embedding_model": settings.EMBEDDING_MODEL,
             "llm_model": settings.GROQ_MODEL,
         }
