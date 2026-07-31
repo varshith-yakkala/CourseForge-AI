@@ -306,7 +306,9 @@ def _register_exception_handlers(app: FastAPI) -> None:
             extra=diag,
         )
         content = {
-            "detail": "An unexpected error occurred. Please try again.",
+            "detail": f"{type(exc).__name__}: {str(exc)}",
+            "type": diag["type"],
+            "message": diag["message"],
             "code": "INTERNAL_ERROR",
         }
         if settings.APP_DEBUG:
