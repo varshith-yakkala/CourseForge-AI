@@ -1,5 +1,5 @@
-from backend.insightforge.chunking.models.chunk import Chunk
-from backend.insightforge.embeddings.models.embedding import Embedding
+from ..chunking.models.chunk import Chunk
+from .models.embedding import Embedding
 
 
 class EmbeddingService:

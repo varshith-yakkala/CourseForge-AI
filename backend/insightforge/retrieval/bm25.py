@@ -3,7 +3,7 @@ from pathlib import Path
 
 from rank_bm25 import BM25Okapi
 
-from backend.insightforge.embeddings.models.embedding import Embedding
+from ..embeddings.models.embedding import Embedding
 
 
 class BM25Retriever:

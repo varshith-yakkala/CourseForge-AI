@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from backend.insightforge.embeddings.models.embedding import Embedding
+from ..embeddings.models.embedding import Embedding
 
 
 class VectorStore(ABC):

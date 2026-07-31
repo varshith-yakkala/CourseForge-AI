@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from backend.insightforge.chunking.models.chunk import Chunk
+from ...chunking.models.chunk import Chunk
 
 
 @dataclass

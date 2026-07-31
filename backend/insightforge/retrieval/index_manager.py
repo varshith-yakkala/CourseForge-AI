@@ -1,9 +1,9 @@
-from backend.insightforge.retrieval.faiss_store import FAISSStore
-from backend.insightforge.retrieval.bm25 import BM25Retriever
-from backend.insightforge.retrieval.metadata_store import MetadataStore
-from backend.insightforge.retrieval.id_mapper import IDMapper
-from backend.insightforge.retrieval.retriever import Retriever
-from backend.insightforge.retrieval.hybrid_retriever import HybridRetriever
+from .faiss_store import FAISSStore
+from .bm25 import BM25Retriever
+from .metadata_store import MetadataStore
+from .id_mapper import IDMapper
+from .retriever import Retriever
+from .hybrid_retriever import HybridRetriever
 
 
 class IndexManager:

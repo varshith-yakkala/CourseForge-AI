@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from backend.insightforge.ingestion.models.document import Document
+from ..models.document import Document
 
 
 class BaseLoader(ABC):

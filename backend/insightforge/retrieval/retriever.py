@@ -1,5 +1,5 @@
-from backend.insightforge.embeddings.embedding_service import EmbeddingService
-from backend.insightforge.retrieval.vector_store import VectorStore
+from ..embeddings.embedding_service import EmbeddingService
+from .vector_store import VectorStore
 
 
 class Retriever:

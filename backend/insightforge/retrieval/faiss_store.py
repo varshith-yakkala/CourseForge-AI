@@ -4,8 +4,8 @@ from pathlib import Path
 import faiss
 import numpy as np
 
-from backend.insightforge.embeddings.models.embedding import Embedding
-from backend.insightforge.retrieval.vector_store import VectorStore
+from ..embeddings.models.embedding import Embedding
+from .vector_store import VectorStore
 
 
 class FAISSStore(VectorStore):

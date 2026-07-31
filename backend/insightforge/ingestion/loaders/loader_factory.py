@@ -1,9 +1,9 @@
 import os
 
-from backend.insightforge.ingestion.loaders.base_loader import BaseLoader
-from backend.insightforge.ingestion.loaders.markdown_loader import MarkdownLoader
-from backend.insightforge.ingestion.loaders.pdf_loader import PDFLoader
-from backend.insightforge.ingestion.loaders.text_loader import TextLoader
+from .base_loader import BaseLoader
+from .markdown_loader import MarkdownLoader
+from .pdf_loader import PDFLoader
+from .text_loader import TextLoader
 
 
 class LoaderFactory:

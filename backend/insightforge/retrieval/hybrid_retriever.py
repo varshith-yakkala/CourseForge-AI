@@ -1,5 +1,5 @@
-from backend.insightforge.retrieval.retriever import Retriever
-from backend.insightforge.retrieval.bm25 import BM25Retriever
+from .retriever import Retriever
+from .bm25 import BM25Retriever
 
 
 class HybridRetriever:

@@ -3,8 +3,8 @@ import uuid
 
 from pypdf import PdfReader
 
-from backend.insightforge.ingestion.loaders.base_loader import BaseLoader
-from backend.insightforge.ingestion.models.document import Document
+from .base_loader import BaseLoader
+from ..models.document import Document
 
 
 class PDFLoader(BaseLoader):
