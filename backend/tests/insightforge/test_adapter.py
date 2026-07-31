@@ -6,7 +6,10 @@ def test_adapter_initialization(monkeypatch):
     mock_rag_class = Mock()
     mock_module = Mock(RAGService=mock_rag_class)
     
-    with patch.dict('sys.modules', {'backend.insightforge.services.rag_service': mock_module}):
+    with patch.dict('sys.modules', {
+        'backend.insightforge.services.rag_service': mock_module,
+        'insightforge.services.rag_service': mock_module,
+    }):
         from insightforge.adapter import InsightForgeAdapter
         adapter = InsightForgeAdapter()
         assert adapter._rag is not None
@@ -17,7 +20,10 @@ def test_adapter_index_document():
     mock_rag_class = Mock(return_value=mock_rag_service)
     mock_module = Mock(RAGService=mock_rag_class)
     
-    with patch.dict('sys.modules', {'backend.insightforge.services.rag_service': mock_module}):
+    with patch.dict('sys.modules', {
+        'backend.insightforge.services.rag_service': mock_module,
+        'insightforge.services.rag_service': mock_module,
+    }):
         from insightforge.adapter import InsightForgeAdapter
         adapter = InsightForgeAdapter()
         
