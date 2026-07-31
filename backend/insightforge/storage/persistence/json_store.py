@@ -4,19 +4,18 @@ import os
 
 class JsonStore:
 
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str | Path | None = None, storage_file: str | Path | None = None):
+        target_path = file_path or storage_file or "documents.json"
+        self.file_path = str(target_path)
 
-        self.file_path = file_path
+        parent_dir = os.path.dirname(self.file_path)
+        if parent_dir:
+            os.makedirs(parent_dir, exist_ok=True)
 
-        os.makedirs(
-            os.path.dirname(file_path),
-            exist_ok=True,
-        )
-
-        if not os.path.exists(file_path):
+        if not os.path.exists(self.file_path):
 
             with open(
-                file_path,
+                self.file_path,
                 "w",
                 encoding="utf-8",
             ) as f:

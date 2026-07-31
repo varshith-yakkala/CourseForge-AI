@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from backend.insightforge.chunking.models.chunk import Chunk
+from ...chunking.models.chunk import Chunk
 
 
 class ChunkStore:
