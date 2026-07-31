@@ -17,6 +17,6 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: UPLOAD_DIR
-        value: /data/uploads
+        value: ./uploads
       - key: STORAGE_DIR
-        value: /data/storage
+        value: ./backend/storage/data
