@@ -47,6 +47,7 @@ class ReadinessResponse(BaseModel):
     embedding_model: str
     groq_available: bool
     insightforge: str
+    detail: str | None = None
     ready: bool
 
 
@@ -107,12 +108,15 @@ async def readiness_check(
     if not is_ready:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
+    detail_msg = hc.get("detail") if isinstance(hc, dict) else None
+
     return ReadinessResponse(
-        status="healthy" if is_ready else "unhealthy",
+        status="healthy" if is_ready else "degraded",
         database=db_status,
         embedding_model=embedding_status,
         groq_available=groq_ok,
         insightforge=insightforge_status,
+        detail=detail_msg,
         ready=is_ready,
     )
 
