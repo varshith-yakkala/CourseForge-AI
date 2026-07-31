@@ -127,8 +127,7 @@ async def upload_document(
         stored_path=stored_path,
         file_size_bytes=file_size_bytes,
         mime_type="application/pdf",
-        index_status="pending",
-        created_at=datetime.now(timezone.utc)
+        index_status="pending"
     )
     db.add(doc)
     await db.commit()
