@@ -175,9 +175,9 @@ class InsightForgeAdapter:
         3. Call GeminiGenerator.generate() with our prompt
         """
         try:
-            from backend.retrieval.hybrid_retriever import HybridRetriever  # type: ignore[import]
-            from backend.llm.generator import GeminiGenerator  # type: ignore[import]
-            from backend.retrieval.confidence import ConfidenceEstimator  # type: ignore[import]
+            from backend.insightforge.retrieval.hybrid_retriever import HybridRetriever
+            from backend.insightforge.llm.generator import GeminiGenerator
+            from backend.insightforge.retrieval.confidence import ConfidenceEstimator
             import time
 
             start = time.time()

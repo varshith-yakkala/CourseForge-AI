@@ -17,8 +17,18 @@ Usage:
     result = engine.query("What is machine learning?", doc_ids=["abc-123"])
 """
 import sys
+from pathlib import Path
 
-# Ensure backend.insightforge module alias resolves cleanly regardless of working directory
+# Ensure project root and backend directory are in sys.path automatically regardless of execution directory
+current_dir = Path(__file__).resolve().parent
+backend_dir = current_dir.parent
+project_root = backend_dir.parent
+
+for p in (str(project_root), str(backend_dir)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+# Ensure module aliases resolve cleanly
 current_mod = sys.modules.get(__name__)
 if current_mod:
     sys.modules.setdefault("backend.insightforge", current_mod)
