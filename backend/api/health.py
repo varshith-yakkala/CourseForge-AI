@@ -92,6 +92,7 @@ async def readiness_check(
     embedding_status = "healthy"
     insightforge_status = "degraded"
 
+    detail_msg = None
     try:
         from insightforge.engine import InsightForgeEngine
         engine = InsightForgeEngine()
@@ -100,15 +101,16 @@ async def readiness_check(
             insightforge_status = "healthy"
         else:
             insightforge_status = hc.get("status", "degraded")
+        detail_msg = hc.get("detail")
     except Exception as exc:
+        import traceback
         logger.warning(f"Readiness check InsightForge check error: {exc}")
+        detail_msg = f"Check Error: {type(exc).__name__}: {exc}"
 
     is_ready = db_status == "healthy" and groq_ok
 
     if not is_ready:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-
-    detail_msg = hc.get("detail") if isinstance(hc, dict) else None
 
     return ReadinessResponse(
         status="healthy" if is_ready else "degraded",
