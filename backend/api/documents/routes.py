@@ -3,7 +3,7 @@ import logging
 import os
 import uuid
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status, UploadFile, File, Form, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -31,6 +31,7 @@ _CHUNK_SIZE = 64 * 1024
 async def upload_document(
     request: Request,
     response: Response,
+    background_tasks: BackgroundTasks,
     course_id: uuid.UUID = Form(...),
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
@@ -133,21 +134,13 @@ async def upload_document(
     await db.commit()
     await db.refresh(doc)
 
-    # ── Execute document indexing synchronously ──────────────────────────────
+    # ── Dispatch document indexing via BackgroundTasks ──────────────────────
     from core.progress import ProgressTracker
-    import time
-    t_start = time.perf_counter()
     ProgressTracker.set_stage(str(doc.id), "uploading_pdf", 15, "PDF file validated and stored")
 
-    logger.info("Calling process_document(%s)", doc.id)
+    logger.info("Dispatching process_document(%s) in background", doc.id)
     from tasks.document_tasks import process_document
-    await process_document(str(doc.id))
-    await db.refresh(doc)
-
-    t_total = round((time.perf_counter() - t_start) * 1000, 2)
-    ProgressTracker.record_timing(str(doc.id), "total_processing_ms", t_total)
-    response.headers["X-Processing-Time-ms"] = str(t_total)
-    logger.info("Upload route finished indexing successfully for doc_id=%s", doc.id)
+    background_tasks.add_task(process_document, str(doc.id))
 
     return doc
 
