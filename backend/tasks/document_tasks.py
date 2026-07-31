@@ -17,7 +17,7 @@ async def process_document(document_id: str | uuid.UUID) -> dict:
     """Async service function to handle DB operations and document indexing synchronously."""
     from db.session import get_db_session
     from db.models.document import Document
-    from sqlalchemy import select
+    from sqlalchemy import select, func
     import uuid
     import traceback
 
@@ -69,7 +69,7 @@ async def process_document(document_id: str | uuid.UUID) -> dict:
             doc.insightforge_doc_id = index_result.doc_id
             doc.chunk_count = index_result.chunk_count
             doc.index_status = "ready"
-            doc.indexed_at = datetime.now(timezone.utc)
+            doc.indexed_at = func.now()
             
             session.add(doc)
             await session.commit()
