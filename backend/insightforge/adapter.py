@@ -68,34 +68,53 @@ class InsightForgeAdapter:
 
     def __init__(self) -> None:
         self._init_error: Exception | None = None
+        self._init_traceback: str | None = None
         self._rag = self._initialize_rag_service()
 
     def _initialize_rag_service(self) -> Any:
         """
         Import integrated InsightForge RAGService directly.
         No external dependencies, paths, or environment variables required.
+
+        Intentionally allows degraded mode (returns None) so that the rest of
+        the application starts even when InsightForge fails.  All failures are
+        logged in full — including SyntaxError, ImportError, and runtime
+        exceptions — so they are never silently swallowed.
         """
+        import traceback as _tb
+
         try:
             from .services.rag_service import RAGService
 
             rag = RAGService()
             logger.info("Integrated InsightForge RAGService loaded successfully.")
+            # Clear any previous failure state on successful init
+            self._init_error = None
+            self._init_traceback = None
             return rag
 
         except Exception as exc:
-            import traceback
             self._init_error = exc
-            logger.error(
-                "InsightForge RAGService initialization failed!\nException Type: %s\nException Repr: %s\nTraceback:\n%s",
+            self._init_traceback = _tb.format_exc()
+            # logger.exception emits the full chained traceback automatically.
+            # This makes SyntaxError / ImportError visible immediately in Render logs.
+            logger.exception(
+                "InsightForge RAGService initialization failed — "
+                "type=%s  repr=%r  (see traceback above)",
                 type(exc).__name__,
-                repr(exc),
-                traceback.format_exc(),
+                exc,
             )
             return None
 
     def get_rag(self) -> Any:
         if self._rag is None:
-            logger.info("Retrying InsightForge RAGService initialization...")
+            if self._init_error is not None:
+                logger.warning(
+                    "Retrying InsightForge RAGService initialization after previous "
+                    "failure: %s: %s",
+                    type(self._init_error).__name__,
+                    self._init_error,
+                )
             self._rag = self._initialize_rag_service()
         return self._rag
 
@@ -340,12 +359,34 @@ class InsightForgeAdapter:
             raise InsightForgeError(f"Failed to delete document '{doc_id}': {exc}") from exc
 
     def health_check(self) -> dict[str, str]:
-        """Return InsightForge component status."""
+        """Return InsightForge component status.
+
+        When degraded, the 'detail' field contains the exception type + message
+        and 'traceback' contains the full formatted traceback so operators can
+        diagnose failures from the /ready endpoint without needing Render logs.
+        """
         rag = self.get_rag()
-        reason = f"Initialization error: {type(self._init_error).__name__}: {self._init_error}" if self._init_error else "RAGService not loaded"
+        if rag:
+            return {
+                "status": "healthy",
+                "detail": None,
+                "traceback": None,
+                "embedding_model": settings.EMBEDDING_MODEL,
+                "llm_model": settings.GROQ_MODEL,
+            }
+
+        if self._init_error is not None:
+            short_reason = (
+                f"{type(self._init_error).__name__}: {self._init_error}"
+            )
+        else:
+            short_reason = "RAGService not loaded — no error recorded"
+
         return {
-            "status": "healthy" if rag else "degraded",
-            "detail": None if rag else reason,
+            "status": "degraded",
+            "detail": short_reason,
+            # Full traceback surfaced at /ready so it's visible without log access
+            "traceback": self._init_traceback,
             "embedding_model": settings.EMBEDDING_MODEL,
             "llm_model": settings.GROQ_MODEL,
         }

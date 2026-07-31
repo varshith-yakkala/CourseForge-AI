@@ -48,6 +48,7 @@ class ReadinessResponse(BaseModel):
     groq_available: bool
     insightforge: str
     detail: str | None = None
+    insightforge_traceback: str | None = None
     ready: bool
 
 
@@ -93,6 +94,7 @@ async def readiness_check(
     insightforge_status = "degraded"
 
     detail_msg = None
+    insightforge_tb = None
     try:
         from insightforge.engine import InsightForgeEngine
         engine = InsightForgeEngine()
@@ -102,10 +104,17 @@ async def readiness_check(
         else:
             insightforge_status = hc.get("status", "degraded")
         detail_msg = hc.get("detail")
+        insightforge_tb = hc.get("traceback")
+        if insightforge_tb:
+            logger.warning(
+                "InsightForge is degraded. Traceback:\n%s", insightforge_tb
+            )
     except Exception as exc:
         import traceback
-        logger.warning(f"Readiness check InsightForge check error: {exc}")
+        tb = traceback.format_exc()
+        logger.warning("Readiness check InsightForge check error: %s\n%s", exc, tb)
         detail_msg = f"Check Error: {type(exc).__name__}: {exc}"
+        insightforge_tb = tb
 
     is_ready = db_status == "healthy" and groq_ok
 
@@ -119,6 +128,7 @@ async def readiness_check(
         groq_available=groq_ok,
         insightforge=insightforge_status,
         detail=detail_msg,
+        insightforge_traceback=insightforge_tb,
         ready=is_ready,
     )
 
