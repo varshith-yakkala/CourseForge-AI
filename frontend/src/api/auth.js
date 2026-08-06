@@ -14,6 +14,8 @@ export const authApi = {
   me: () => apiClient.get('/auth/me'),
   /** Update user profile. Phase 2. */
   updateMe: (data) => apiClient.put('/auth/me', data),
+  /** Refresh access token. Phase 2. */
+  refresh: (data) => apiClient.post('/auth/refresh', data),
   /** Logout (invalidate refresh token). Phase 2. */
   logout: () => apiClient.post('/auth/logout'),
 }

@@ -79,6 +79,7 @@ async def lifespan(app: FastAPI):
     # on the first use.  Doing this at startup means the first PDF upload won't
     # trigger a cold download inside asyncio.wait_for() and fail with TimeoutError.
     async def _warmup_embedding_model() -> None:
+        import asyncio
         try:
             logger.info("Pre-warming SentenceTransformer embedding model...")
             from insightforge.embeddings.embedding_service import EmbeddingService
@@ -90,8 +91,8 @@ async def lifespan(app: FastAPI):
                 _wup_exc,
             )
 
-    import asyncio as _asyncio
-    _asyncio.ensure_future(_warmup_embedding_model())
+    import asyncio
+    asyncio.ensure_future(_warmup_embedding_model())
 
     for route in app.routes:
         methods = getattr(route, "methods", None)

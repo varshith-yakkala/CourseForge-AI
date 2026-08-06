@@ -29,7 +29,7 @@ export default function RegisterPage() {
       await authApi.register(formData);
       // 2. Automatically log them in after registration
       const data = await authApi.login({ email: formData.email, password: formData.password });
-      login(data.user, data.access_token);
+      login(data.user, data.access_token, data.refresh_token);
       navigate('/dashboard');
     } catch (error) {
       addNotification({

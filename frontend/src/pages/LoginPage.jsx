@@ -26,7 +26,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const data = await authApi.login(formData);
-      login(data.user, data.access_token);
+      login(data.user, data.access_token, data.refresh_token);
       navigate('/dashboard');
     } catch (error) {
       addNotification({

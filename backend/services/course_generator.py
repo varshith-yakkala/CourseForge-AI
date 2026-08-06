@@ -53,6 +53,7 @@ class CourseGeneratorService:
         t_llm_start = time.perf_counter()
         ProgressTracker.set_stage(course_id, "generating_course_blueprint", 70, "Generating course blueprint via Groq LLM")
 
+        logger.info(f"Course {course_id} | Stage 1: Retrieving context chunks from InsightForge (Query: {document.insightforge_doc_id})")
         # 1. Retrieve chunks to form context
         chunks = self.engine.retrieve_chunks(
             query="Summarize the core concepts, outline, and main topics of this document to form a course syllabus.",
@@ -61,7 +62,9 @@ class CourseGeneratorService:
         )
         
         context = "\n".join([c.content for c in chunks])
+        logger.info(f"Course {course_id} | Stage 1 Complete: Retrieved {len(chunks)} chunks, context size {len(context)} characters")
         
+        logger.info(f"Course {course_id} | Stage 2: Building LLM prompt")
         # 2. Build Prompt
         schema_json = CourseBlueprintResponse.model_json_schema()
         prompt = PromptManager.build(
@@ -70,6 +73,7 @@ class CourseGeneratorService:
             schema=json.dumps(schema_json, indent=2)
         )
         
+        logger.info(f"Course {course_id} | Stage 3: Querying Groq LLM for course blueprint")
         # 3. Query LLM
         query_result = self.engine.query(
             question="Generate course blueprint", 
@@ -79,9 +83,11 @@ class CourseGeneratorService:
         
         t_llm = round((time.perf_counter() - t_llm_start) * 1000, 2)
         ProgressTracker.record_timing(course_id, "llm_generation_ms", t_llm)
+        logger.info(f"Course {course_id} | Stage 3 Complete: LLM responded in {t_llm}ms")
 
         answer = query_result.answer
         if not answer:
+            logger.error(f"Course {course_id} | Stage 3 Failed: LLM returned empty answer")
             raise CourseForgeError("LLM failed to generate a response.")
             
         # Parse and Validate with Pydantic
@@ -146,64 +152,71 @@ class CourseGeneratorService:
 
         # 4. Save to DB
         ProgressTracker.set_stage(course_id, "saving_course", 90, "Saving course syllabus and lessons to database")
+        
+        logger.info(f"Course {course_id} | Stage 4 Complete: Successfully parsed LLM response into blueprint schema")
+        logger.info(f"Course {course_id} | Stage 5: Saving course structure to database")
+        
         t_db_start = time.perf_counter()
-        course.title = blueprint.title
-        course.description = blueprint.description
-        course.difficulty = blueprint.difficulty
-        course.estimated_duration_min = blueprint.estimated_duration_min
-        course.tags = blueprint.tags
-        course.status = "ready"
+        try:
+            course.title = blueprint.title
+            course.description = blueprint.description
+            course.difficulty = blueprint.difficulty
+            course.estimated_duration_min = blueprint.estimated_duration_min
+            course.tags = blueprint.tags
+            course.status = "ready"
 
-        
-        # Delete existing lessons if this is a regeneration
-        import uuid
-        from sqlalchemy import delete
-        await self.db.execute(delete(Lesson).where(Lesson.course_id == course.id))
-        
-        objects_to_add = []
-        for l_idx, l_data in enumerate(blueprint.lessons):
-            lesson_id = uuid.uuid4()
-            lesson = Lesson(
-                id=lesson_id,
-                course_id=course.id,
-                title=l_data.title,
-                summary=l_data.summary,
-                order_index=l_idx,
-                estimated_duration_min=l_data.estimated_duration_min,
-                status="pending"
-            )
-            objects_to_add.append(lesson)
             
-            for t_idx, t_data in enumerate(l_data.topics):
-                topic_id = uuid.uuid4()
-                topic = Topic(
-                    id=topic_id,
-                    lesson_id=lesson_id,
+            # Delete existing lessons if this is a regeneration
+            import uuid
+            from sqlalchemy import delete
+            await self.db.execute(delete(Lesson).where(Lesson.course_id == course.id))
+            
+            objects_to_add = []
+            for l_idx, l_data in enumerate(blueprint.lessons):
+                lesson_id = uuid.uuid4()
+                lesson = Lesson(
+                    id=lesson_id,
                     course_id=course.id,
-                    title=t_data.title,
-                    content=t_data.description,
-                    order_index=t_idx,
-                    key_terms=t_data.key_terms
+                    title=l_data.title,
+                    summary=l_data.summary,
+                    order_index=l_idx,
+                    estimated_duration_min=l_data.estimated_duration_min,
+                    status="pending"
                 )
-                objects_to_add.append(topic)
+                objects_to_add.append(lesson)
                 
-                for st_idx, st_data in enumerate(t_data.subtopics):
-                    subtopic = Subtopic(
-                        id=uuid.uuid4(),
-                        topic_id=topic_id,
+                for t_idx, t_data in enumerate(l_data.topics):
+                    topic_id = uuid.uuid4()
+                    topic = Topic(
+                        id=topic_id,
                         lesson_id=lesson_id,
                         course_id=course.id,
-                        title=st_data.title,
-                        content=st_data.description,
-                        order_index=st_idx
+                        title=t_data.title,
+                        content=t_data.description,
+                        order_index=t_idx,
+                        key_terms=t_data.key_terms
                     )
-                    objects_to_add.append(subtopic)
-        self.db.add_all(objects_to_add)
-        await self.db.commit()
+                    objects_to_add.append(topic)
+                    
+                    for st_idx, st_data in enumerate(t_data.subtopics):
+                        subtopic = Subtopic(
+                            id=uuid.uuid4(),
+                            topic_id=topic_id,
+                            lesson_id=lesson_id,
+                            course_id=course.id,
+                            title=st_data.title,
+                            content=st_data.description,
+                            order_index=st_idx
+                        )
+                        objects_to_add.append(subtopic)
+            self.db.add_all(objects_to_add)
+            await self.db.commit()
 
-        t_db = round((time.perf_counter() - t_db_start) * 1000, 2)
-        ProgressTracker.record_timing(course_id, "db_write_ms", t_db)
-        ProgressTracker.set_stage(course_id, "completed", 100, "Course generated successfully")
-        return {"status": "success", "course_id": course_id}
-
-
+            t_db = round((time.perf_counter() - t_db_start) * 1000, 2)
+            ProgressTracker.record_timing(course_id, "db_write_ms", t_db)
+            ProgressTracker.set_stage(course_id, "completed", 100, "Course generated successfully")
+            logger.info(f"Course {course_id} | Stage 5 Complete: Course generated and saved successfully")
+            return {"status": "success", "course_id": course_id}
+        except Exception as e:
+            logger.error(f"Course {course_id} | Stage 5 Failed: Error saving course to database: {e}")
+            raise CourseForgeError(f"Error saving course to database: {e}")
