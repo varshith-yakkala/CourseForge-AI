@@ -5,6 +5,7 @@ Responsibility: Generate complete course structure from an indexed PDF.
 from __future__ import annotations
 import json
 import logging
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -17,8 +18,16 @@ from llm.prompt_manager import PromptManager
 from llm.schemas import CourseBlueprintResponse
 from insightforge.engine import InsightForgeEngine
 from core.exceptions import CourseForgeError
+import psutil
+import os
+import gc
 
 logger = logging.getLogger(__name__)
+
+def log_memory(stage: str):
+    process = psutil.Process(os.getpid())
+    mem_mb = process.memory_info().rss / (1024 * 1024)
+    logger.info(f"[Memory Profiler] {stage}: {mem_mb:.2f} MB")
 
 class CourseGeneratorService:
     def __init__(self, db: AsyncSession):
@@ -52,6 +61,8 @@ class CourseGeneratorService:
 
         t_llm_start = time.perf_counter()
         ProgressTracker.set_stage(course_id, "generating_course_blueprint", 70, "Generating course blueprint via Groq LLM")
+
+        log_memory(f"Course {course_id} | Start Generation")
 
         logger.info(f"Course {course_id} | Stage 1: Retrieving context chunks from InsightForge (Query: {document.insightforge_doc_id})")
         # 1. Retrieve chunks to form context
@@ -216,6 +227,10 @@ class CourseGeneratorService:
             ProgressTracker.record_timing(course_id, "db_write_ms", t_db)
             ProgressTracker.set_stage(course_id, "completed", 100, "Course generated successfully")
             logger.info(f"Course {course_id} | Stage 5 Complete: Course generated and saved successfully")
+            
+            gc.collect()
+            log_memory(f"Course {course_id} | End Generation")
+
             return {"status": "success", "course_id": course_id}
         except Exception as e:
             logger.error(f"Course {course_id} | Stage 5 Failed: Error saving course to database: {e}")

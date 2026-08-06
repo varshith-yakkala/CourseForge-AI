@@ -5,12 +5,20 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
+import gc
+import psutil
+import os
 from datetime import datetime, timezone
 
 from core.exceptions import InsightForgeError
 from insightforge.engine import InsightForgeEngine
 
 logger = logging.getLogger(__name__)
+
+def log_memory(stage: str):
+    process = psutil.Process(os.getpid())
+    mem_mb = process.memory_info().rss / (1024 * 1024)
+    logger.info(f"[Memory Profiler] {stage}: {mem_mb:.2f} MB")
 
 
 async def process_document(document_id: str | uuid.UUID) -> dict:
@@ -61,6 +69,8 @@ async def process_document(document_id: str | uuid.UUID) -> dict:
             # from HuggingFace Hub. Subsequent calls are fast (model is cached).
             # Without a timeout, a hung thread leaves status=processing forever.
             INDEXING_TIMEOUT_SECONDS = 300  # 5 minutes: generous for first cold download
+            
+            log_memory(f"Before engine.index_document({doc_uuid})")
             logger.info(
                 "Calling engine.index_document(%s) via thread pool (timeout=%ds)...",
                 doc.stored_path,
@@ -88,6 +98,7 @@ async def process_document(document_id: str | uuid.UUID) -> dict:
                 return {"status": "error", "message": msg}
 
             logger.info("Finished indexing for document_id=%s, chunk_count=%d", document_id, index_result.chunk_count)
+            log_memory(f"After engine.index_document({doc_uuid})")
 
             t_index = round((time.perf_counter() - t_start) * 1000, 2)
             ProgressTracker.record_timing(document_id, "index_creation_ms", t_index)

@@ -1,7 +1,15 @@
 import logging
+import gc
+import psutil
+import os
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+def log_memory(stage: str):
+    process = psutil.Process(os.getpid())
+    mem_mb = process.memory_info().rss / (1024 * 1024)
+    logger.info(f"[Memory Profiler] {stage}: {mem_mb:.2f} MB")
 
 from ..chunking.chunkers.character_chunker import CharacterChunker
 from ..embeddings.embedding_service import EmbeddingService
@@ -103,19 +111,27 @@ class IndexingPipeline:
         if not document.content or not document.content.strip():
             raise ValueError("The uploaded document contains no extractable text. Please upload a document with readable text.")
 
+        log_memory("After PDF Extraction")
         logger.info("Stage 2: Chunking Document")
         chunks = self.chunker.chunk(
             document
         )
         self.storage.save_chunks(
-    document.id,
-    chunks,
-)
+            document.id,
+            chunks,
+        )
+        
+        # Free full document content from memory
+        document.content = ""
+        gc.collect()
+        log_memory("After Chunking & GC")
 
         logger.info("Stage 3: Generating Embeddings")
         embeddings = self.embedding_service.embed_chunks(
             chunks
         )
+        
+        log_memory("After Embedding Generation")
 
         logger.info("Stage 4: Building Vector Index (FAISS)")
         self.faiss_store.add(
@@ -158,6 +174,11 @@ class IndexingPipeline:
         self.indexed_files.add(
             file_path
         )
+        
+        del embeddings
+        del chunks
+        gc.collect()
+        log_memory("After Indexing & Cleanup")
 
         logger.info("Stage 7: Completed Indexing")
         return {

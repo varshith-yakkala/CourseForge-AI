@@ -61,6 +61,9 @@ async def lifespan(app: FastAPI):
     logger.info("  • Database: Connected (Neon PostgreSQL)")
     logger.info("  • Groq Client: Initialized (llama-3.3-70b-versatile)")
     logger.info("  • RAG Engine: InsightForge AI (FAISS + BM25)")
+    process = psutil.Process(os.getpid())
+    mem_mb = process.memory_info().rss / (1024 * 1024)
+    logger.info(f"  • Memory Profiler: App startup complete, utilizing {mem_mb:.2f} MB")
     logger.info("=========================================================")
 
     _ensure_runtime_directories()
@@ -74,25 +77,8 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.error("Failed to initialize InsightForgeEngine singleton during app startup: %s", exc, exc_info=True)
 
-    # Pre-warm the SentenceTransformer model in the background.
-    # On Render free tier the model (~80 MB) must be downloaded from HuggingFace Hub
-    # on the first use.  Doing this at startup means the first PDF upload won't
-    # trigger a cold download inside asyncio.wait_for() and fail with TimeoutError.
-    async def _warmup_embedding_model() -> None:
-        import asyncio
-        try:
-            logger.info("Pre-warming SentenceTransformer embedding model...")
-            from insightforge.embeddings.embedding_service import EmbeddingService
-            await asyncio.to_thread(EmbeddingService.get_model)
-            logger.info("SentenceTransformer embedding model pre-warm complete.")
-        except Exception as _wup_exc:
-            logger.warning(
-                "Embedding model pre-warm failed (will retry on first upload): %s",
-                _wup_exc,
-            )
-
-    import asyncio
-    asyncio.ensure_future(_warmup_embedding_model())
+    # Pre-warm removed to save memory on Render startup.
+    # The SentenceTransformer model will be loaded lazily on first document upload.
 
     for route in app.routes:
         methods = getattr(route, "methods", None)
