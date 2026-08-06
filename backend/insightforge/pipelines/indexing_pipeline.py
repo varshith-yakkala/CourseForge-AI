@@ -1,4 +1,7 @@
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from ..chunking.chunkers.character_chunker import CharacterChunker
 from ..embeddings.embedding_service import EmbeddingService
@@ -88,6 +91,7 @@ class IndexingPipeline:
 
             }
 
+        logger.info("Stage 1: Extracting PDF")
         loader = self.loader_factory.get_loader(
             file_path
         )
@@ -99,6 +103,7 @@ class IndexingPipeline:
         if not document.content or not document.content.strip():
             raise ValueError("The uploaded document contains no extractable text. Please upload a document with readable text.")
 
+        logger.info("Stage 2: Chunking Document")
         chunks = self.chunker.chunk(
             document
         )
@@ -107,18 +112,22 @@ class IndexingPipeline:
     chunks,
 )
 
+        logger.info("Stage 3: Generating Embeddings")
         embeddings = self.embedding_service.embed_chunks(
             chunks
         )
 
+        logger.info("Stage 4: Building Vector Index (FAISS)")
         self.faiss_store.add(
             embeddings
         )
 
+        logger.info("Stage 5: Building Vector Index (BM25)")
         self.bm25.add(
             embeddings
         )
 
+        logger.info("Stage 6: Saving Index")
         indexed_document = IndexedDocument(
 
             id=document.id,
@@ -150,6 +159,7 @@ class IndexingPipeline:
             file_path
         )
 
+        logger.info("Stage 7: Completed Indexing")
         return {
 
             "retriever": self.hybrid_retriever,
