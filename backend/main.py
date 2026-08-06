@@ -230,13 +230,13 @@ def _register_exception_handlers(app: FastAPI) -> None:
         req_id = getattr(getattr(request, "state", None), "request_id", None) or request.headers.get("X-Request-ID", "N/A")
         msg = str(getattr(exc, "detail", str(exc)))
         return {
-            "type": type(exc).__name__,
-            "message": msg,
-            "traceback": tb_str,
-            "filename": filename,
-            "lineno": lineno,
-            "function": func_name,
-            "path": request.url.path,
+            "error_type": type(exc).__name__,
+            "error_message": msg,
+            "error_traceback": tb_str,
+            "error_filename": filename,
+            "error_lineno": lineno,
+            "error_function": func_name,
+            "request_path": request.url.path,
             "request_id": req_id,
         }
 
@@ -251,7 +251,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
         diag = _extract_diag(exc, request)
         logger.warning(
             "Rate limit exceeded on %s (RequestID: %s):\nFile: %s (Line %s)\nMessage: %s",
-            diag["path"], diag["request_id"], diag["filename"], diag["lineno"], diag["message"],
+            diag["request_path"], diag["request_id"], diag["error_filename"], diag["error_lineno"], diag["error_message"],
             extra=diag,
         )
         return JSONResponse(
@@ -271,7 +271,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
         formatted_errors = [{"loc": err.get("loc"), "msg": err.get("msg"), "type": err.get("type")} for err in exc.errors()]
         logger.warning(
             "Request validation error on %s %s (RequestID: %s):\nFile: %s (Line %s)\nErrors: %s",
-            request.method, diag["path"], diag["request_id"], diag["filename"], diag["lineno"], formatted_errors,
+            request.method, diag["request_path"], diag["request_id"], diag["error_filename"], diag["error_lineno"], formatted_errors,
             extra=diag,
         )
         return JSONResponse(
@@ -288,17 +288,16 @@ def _register_exception_handlers(app: FastAPI) -> None:
         request: Request, exc: CourseForgeError
     ) -> JSONResponse:
         diag = _extract_diag(exc, request)
-        logger.error(
-            "Application error on %s %s (RequestID: %s):\nType: %s\nMessage: %s\nFile: %s:%s (in %s)\nTraceback:\n%s",
+        logger.exception(
+            "Application error on %s %s (RequestID: %s):\nType: %s\nMessage: %s\nFile: %s:%s (in %s)",
             request.method,
-            diag["path"],
+            diag["request_path"],
             diag["request_id"],
-            diag["type"],
-            diag["message"],
-            diag["filename"],
-            diag["lineno"],
-            diag["function"],
-            diag["traceback"],
+            diag["error_type"],
+            diag["error_message"],
+            diag["error_filename"],
+            diag["error_lineno"],
+            diag["error_function"],
             extra=diag,
         )
         return JSONResponse(
@@ -311,28 +310,27 @@ def _register_exception_handlers(app: FastAPI) -> None:
         request: Request, exc: Exception
     ) -> JSONResponse:
         diag = _extract_diag(exc, request)
-        logger.error(
-            "Unhandled exception on %s %s (RequestID: %s):\nType: %s\nMessage: %s\nFile: %s:%s (in %s)\nTraceback:\n%s",
+        logger.exception(
+            "Unhandled exception on %s %s (RequestID: %s):\nType: %s\nMessage: %s\nFile: %s:%s (in %s)",
             request.method,
-            diag["path"],
+            diag["request_path"],
             diag["request_id"],
-            diag["type"],
-            diag["message"],
-            diag["filename"],
-            diag["lineno"],
-            diag["function"],
-            diag["traceback"],
+            diag["error_type"],
+            diag["error_message"],
+            diag["error_filename"],
+            diag["error_lineno"],
+            diag["error_function"],
             extra=diag,
         )
         content = {
             "detail": f"{type(exc).__name__}: {str(exc)}",
-            "type": diag["type"],
-            "message": diag["message"],
+            "type": diag["error_type"],
+            "message": diag["error_message"],
             "code": "INTERNAL_ERROR",
         }
         if settings.APP_DEBUG:
-            content["debug_message"] = f"{diag['type']}: {diag['message']}"
-            content["traceback"] = diag["traceback"].splitlines()
+            content["debug_message"] = f"{diag['error_type']}: {diag['error_message']}"
+            content["traceback"] = diag["error_traceback"].splitlines()
         return JSONResponse(
             status_code=500,
             content=content,

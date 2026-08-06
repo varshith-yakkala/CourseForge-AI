@@ -85,7 +85,7 @@ class PromptManager:
                     f"Available templates: {available}"
                 )
             self._cache[name] = path.read_text(encoding="utf-8")
-            logger.debug("Prompt template loaded.", extra={"name": name, "version": self._version})
+            logger.debug("Prompt template loaded.", extra={"prompt_name": name, "version": self._version})
 
         return self._cache[name]
 
