@@ -9,7 +9,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon_Async-4169E1.svg?logo=postgresql)](https://neon.tech)
 [![Groq](https://img.shields.io/badge/LLM-Groq_Llama_3.3_70B-f05032.svg)](https://groq.com)
 
-CourseForge AI is an end-to-end learning management and course generation platform that converts static PDF textbooks and technical documents into interactive, structured educational courses. Utilizing a high-performance synchronous FastAPI backend, Neon PostgreSQL for persistent state, SentenceTransformers (`all-MiniLM-L6-v2`) for local embeddings, FAISS + BM25 for hybrid vector retrieval via InsightForge RAG, and Groq (`llama-3.3-70b-versatile`) for ultra-fast LLM inference, CourseForge AI automatically extracts document context and crafts multi-tiered course syllabi, interactive markdown lessons, quizzes, flashcards, and personalized study roadmaps.
+CourseForge AI is an end-to-end learning management and course generation platform that converts static PDF textbooks and technical documents into interactive, structured educational courses. Utilizing a high-performance synchronous FastAPI backend, Neon PostgreSQL for persistent state, SentenceTransformers (`all-MiniLM-L6-v2`) for local embeddings, FAISS + BM25 hybrid retrieval re-ranked by a neural Cross-Encoder (`ms-marco-MiniLM-L-6-v2`) via InsightForge RAG, and Groq (`llama-3.3-70b-versatile`) for ultra-fast LLM inference, CourseForge AI automatically extracts document context and crafts multi-tiered course syllabi, interactive markdown lessons, quizzes, flashcards, and personalized study roadmaps.
 
 ---
 
@@ -17,20 +17,20 @@ CourseForge AI is an end-to-end learning management and course generation platfo
 
 * **AI-Powered Course Generation**: Automatically synthesizes complete course blueprints (lessons, topics, subtopics) from uploaded documents.
 * **PDF Upload & Validation**: Secure streaming upload supporting file size limits, MIME type verification, and PDF magic byte (`%PDF-`) validation.
-* **InsightForge RAG Engine**: Leverages hybrid retrieval combining FAISS vector similarity search and BM25 keyword matching for context-rich generation.
+* **InsightForge Hybrid RAG Engine**: Combines dense FAISS vector similarity search with sparse BM25 keyword retrieval for comprehensive context coverage.
+* **Neural Cross-Encoder Re-Ranking**: Uses `cross-encoder/ms-marco-MiniLM-L-6-v2` to re-score and re-rank initial candidate chunks via full cross-attention before LLM generation.
 * **Local Embedding Engine**: Generates dense vector embeddings locally using `SentenceTransformer` (`all-MiniLM-L6-v2`) for zero external embedding costs.
 * **Ultra-Fast LLM Inference**: Powered by Groq's LLaMA-3.3-70B model for near-instant syllabus and lesson generation.
 * **Real-Time Stage Progress Tracking**: Granular stage reporting (`uploading_pdf` ➔ `extracting_text` ➔ `chunking_document` ➔ `generating_embeddings` ➔ `building_search_index` ➔ `generating_course_blueprint` ➔ `saving_course` ➔ `completed`) via lightweight REST endpoints.
 * **Robust JWT Authentication**: Secure user registration, password hashing with bcrypt, access/refresh token lifecycle, and role-aware routes.
 * **Interactive Learning Suite**: Complete interactive workspace including Markdown lesson rendering, AI lesson tutor chat, quizzes, flashcard reviews, and daily study planning.
 * **Production Observability**: Request correlation (`X-Request-ID`), stage timing metrics (`X-Processing-Time-ms`), structured JSON logs, and health probes (`/health`, `/ready`, `/metrics`).
-* **Optimized Synchronous Pipeline**: Single-process architecture engineered to eliminate external queue dependencies while achieving sub-3-second end-to-end course generation.
 
 ---
 
 ## 🏗️ Architecture
 
-CourseForge AI operates on a streamlined, synchronous single-process architecture designed for speed, stability, and zero background worker complexity.
+CourseForge AI operates on a streamlined two-stage hybrid RAG pipeline designed for speed, precision, and zero background worker complexity.
 
 ```mermaid
 flowchart TD
@@ -44,8 +44,14 @@ flowchart TD
         subgraph Engine ["InsightForge RAG Engine (Singleton)"]
             Extract["PyPDF Parser & Token Chunking"]
             Embed["SentenceTransformers (all-MiniLM-L6-v2)"]
-            FAISS["FAISS Dense Vector Index"]
-            BM25["BM25 Keyword Indexer"]
+            
+            subgraph Retrieval ["Stage 1: Hybrid Candidate Retrieval"]
+                FAISS["FAISS Dense Vector Search"]
+                BM25["BM25 Sparse Keyword Search"]
+            end
+            
+            Rerank["Stage 2: Cross-Encoder Reranker (ms-marco-MiniLM-L-6-v2)"]
+            Compress["Stage 3: Context Compression (Top 5 Chunks)"]
         end
         
         Generator["Course Blueprint Generator"]
@@ -63,6 +69,10 @@ flowchart TD
     Extract --> Embed
     Embed --> FAISS
     Extract --> BM25
+    FAISS -->|Top 30 Candidates| Rerank
+    BM25 -->|Top 30 Candidates| Rerank
+    Rerank -->|Top 15 Re-ranked| Compress
+    Compress -->|Top 5 Context Chunks| Generator
     Generator -->|Prompt Context| Groq
     Groq -->|Generated Blueprint JSON| Generator
     Generator -->|Batch SQL Commit| DB
@@ -86,9 +96,10 @@ flowchart TD
 * **Rate Limiting**: SlowAPI 0.1.9
 
 ### AI & RAG Engine
-* **RAG Framework**: InsightForge AI Adapter Integration
-* **Embeddings**: SentenceTransformers 3.1.1 (`sentence-transformers/all-MiniLM-L6-v2`)
-* **Vector Index**: FAISS CPU 1.8.0.post1 + Rank-BM25 0.2.2
+* **RAG Framework**: InsightForge AI Integration
+* **Dense Embeddings**: SentenceTransformers (`sentence-transformers/all-MiniLM-L6-v2`)
+* **Vector & Keyword Index**: FAISS CPU 1.8.0.post1 + Rank-BM25 0.2.2
+* **Neural Re-Ranker**: SentenceTransformers CrossEncoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`)
 * **LLM Engine**: Groq API Client (`groq==0.11.0`, model: `llama-3.3-70b-versatile`)
 
 ### Database & Persistence
